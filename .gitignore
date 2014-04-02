@@ -1,3 +1,6 @@
 Makefile
 *.o
 moc_*.cpp
+ui_mainwindow.h
+qt-vt-uploader
+qt-vt-uploader.pro.user

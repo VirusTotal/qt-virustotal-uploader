@@ -39,7 +39,7 @@
              <bool>true</bool>
             </property>
             <property name="columnCount">
-             <number>12</number>
+             <number>10</number>
             </property>
             <attribute name="horizontalHeaderCascadingSectionResizes">
              <bool>false</bool>
@@ -89,9 +89,11 @@
               <string>MD5</string>
              </property>
             </column>
-            <column/>
-            <column/>
-            <column/>
+            <column>
+             <property name="text">
+              <string>Full Path</string>
+             </property>
+            </column>
            </widget>
           </item>
          </layout>

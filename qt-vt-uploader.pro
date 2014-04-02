@@ -14,9 +14,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    scanner_table_widget.cpp
+    scanner_table_widget.cpp \
+    vtfile.cpp \
+    calc_file_hashes_task.cpp
 
 HEADERS  += mainwindow.h vt-log.h \
-    scanner_table_widget.h
+    scanner_table_widget.h \
+    vtfile.h \
+    calc_file_hashes_task.h
 
 FORMS    += mainwindow.ui

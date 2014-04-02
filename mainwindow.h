@@ -10,6 +10,7 @@
 #include <QTimer>
 
 
+#include "vtfile.h"
 
 namespace Ui {
 class MainWindow;
@@ -29,11 +30,14 @@ signals:
   void dropped(const QMimeData *mimeData = 0);
 
 private:
-    Ui::MainWindow *ui;
-    unsigned int req_per_minute_quota;
-    QTimer *minute_timer;
-    QTimer *state_timer;
+  Ui::MainWindow *ui;
+  unsigned int req_per_minute_quota;
+  QTimer *minute_timer;
+  QTimer *state_timer;
+  QVector<VtFile *> file_vector;
 
+  void ReDrawScannerTable(void);
+  void RunStateMachine(void);
 
 private slots:
   void __onLogMsgRecv(int level, int code, QString Msg);

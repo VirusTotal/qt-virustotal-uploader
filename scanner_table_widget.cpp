@@ -3,6 +3,7 @@
 
 #include "scanner_table_widget.h"
 
+
 ScannerTableWidget::ScannerTableWidget(QWidget *parent) : QTableWidget(parent)
 {
 
