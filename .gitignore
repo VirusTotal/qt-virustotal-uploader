@@ -1,2 +1,3 @@
 Makefile
 *.o
+moc_*.cpp
