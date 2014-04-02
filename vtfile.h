@@ -5,20 +5,22 @@
 #include <QByteArray>
 #include <QString>
 
-enum VtFileState {
+enum QVtFileState {
   kNew = 0,
   kCheckingHash,
   kHashesCalculated,
+  kCheckReport,
   kScan,
+  kWaitForReport,
   kStopped,
   kErrorTooBig,
   kErrorAccess,
 };
 
-class VtFile : public QFile
+class QVtFile : public QFile
 {
   Q_OBJECT
-  enum VtFileState vt_file_state;
+  enum QVtFileState vt_file_state;
   QByteArray md5_hash;
   QByteArray sha1_hash;
   QByteArray sha256_hash;
@@ -26,14 +28,14 @@ class VtFile : public QFile
 
 
 public:
-  VtFile(QObject *parent = 0);
-  VtFile( const QString & name );
-  VtFile(const QString & name, QObject *parent);
-  ~VtFile();
+  QVtFile(QObject *parent = 0);
+  QVtFile( const QString & name );
+  QVtFile(const QString & name, QObject *parent);
+  ~QVtFile();
 
-  enum VtFileState GetState(void);
+  enum QVtFileState GetState(void);
   QString GetStateStr(void);
-  void SetState(enum VtFileState state);
+  void SetState(enum QVtFileState state);
   void CalculateHashes(void);
   void SetMd5(const QByteArray &val);
   void SetSha1(const QByteArray &val);
@@ -42,6 +44,8 @@ public:
   QByteArray GetMd5();
   QByteArray GetSha1();
   QByteArray GetSha256();
+
+  void CheckReport(void);
 
 signals:
 

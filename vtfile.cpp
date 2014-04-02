@@ -2,35 +2,35 @@
 #include "vtfile.h"
 #include "calc_file_hashes_task.h"
 
-VtFile::VtFile(QObject *parent) :
+QVtFile::QVtFile(QObject *parent) :
   QFile(parent)
 {
   InitCommon();
 }
 
 
-VtFile::VtFile(const QString & name, QObject *parent) :
+QVtFile::QVtFile(const QString & name, QObject *parent) :
   QFile(name, parent)
 {
   InitCommon();
 }
 
-VtFile::~VtFile()
+QVtFile::~QVtFile()
 {
 }
 
-void VtFile::InitCommon(void)
+void QVtFile::InitCommon(void)
 {
   vt_file_state = kNew;
 }
 
 
-enum VtFileState VtFile::GetState(void)
+enum QVtFileState QVtFile::GetState(void)
 {
   return vt_file_state;
 }
 
-QString VtFile::GetStateStr(void)
+QString QVtFile::GetStateStr(void)
 {
   switch (vt_file_state)
   {
@@ -52,12 +52,12 @@ QString VtFile::GetStateStr(void)
      return  QString("Undefined state") + QString::number(vt_file_state);
   }
 }
-void VtFile::SetState(enum VtFileState state)
+void QVtFile::SetState(enum QVtFileState state)
 {
   vt_file_state = state;
 }
 
-void VtFile::CalculateHashes(void)
+void QVtFile::CalculateHashes(void)
 {
   CalcFileHashesTask *hash_task = new CalcFileHashesTask(this);
 
@@ -67,33 +67,38 @@ void VtFile::CalculateHashes(void)
   QThreadPool::globalInstance()->start(hash_task);
 }
 
-void VtFile::SetMd5(const QByteArray &val)
+void QVtFile::SetMd5(const QByteArray &val)
 {
   md5_hash = val;
 }
 
-void VtFile::SetSha1(const QByteArray &val)
+void QVtFile::SetSha1(const QByteArray &val)
 {
   sha1_hash = val;
 }
 
-void VtFile::SetSha256(const QByteArray &val)
+void QVtFile::SetSha256(const QByteArray &val)
 {
   sha256_hash = val;
 }
 
-QByteArray VtFile::GetMd5()
+QByteArray QVtFile::GetMd5()
 {
   return md5_hash;
 }
 
-QByteArray VtFile::GetSha1()
+QByteArray QVtFile::GetSha1()
 {
   return sha1_hash;
 }
 
-QByteArray VtFile::GetSha256()
+QByteArray QVtFile::GetSha256()
 {
   return sha256_hash;
+}
+
+void QVtFile::CheckReport(void)
+{
+
 }
 

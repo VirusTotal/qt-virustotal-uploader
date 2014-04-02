@@ -34,7 +34,7 @@ private:
   unsigned int req_per_minute_quota;
   QTimer *minute_timer;
   QTimer *state_timer;
-  QVector<VtFile *> file_vector;
+  QVector<QVtFile *> file_vector;
 
   void ReDrawScannerTable(void);
   void RunStateMachine(void);

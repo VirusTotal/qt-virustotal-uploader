@@ -179,7 +179,7 @@ void MainWindow::OnDropRecv(const QMimeData *mime_data)
   }
   file_path = mime_data->text().mid(strlen("file://"));
 
-  file_vector.append(new VtFile(file_path, this));
+  file_vector.append(new QVtFile(file_path, this));
 
   ReDrawScannerTable();
 }
@@ -207,7 +207,7 @@ void MainWindow::ReDrawScannerTable(void)
 
   for (int i = 0; i < num_files ; i++) {
 
-    VtFile *file = file_vector.operator[](i);
+    QVtFile *file = file_vector.operator[](i);
     int last_slash = file->fileName().lastIndexOf(QDir::separator());
 
 
@@ -241,9 +241,9 @@ void MainWindow::RunStateMachine(void)
   num_files = file_vector.count();
 
   for (int i = 0; i < num_files ; i++) {
-    VtFile *file = file_vector.operator[](i);
+    QVtFile *file = file_vector.operator[](i);
     QString state_str = file->GetStateStr();
-    enum VtFileState file_state = file->GetState();
+    enum QVtFileState file_state = file->GetState();
     ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL, new QTableWidgetItem(state_str) );
      switch (file_state)
      {

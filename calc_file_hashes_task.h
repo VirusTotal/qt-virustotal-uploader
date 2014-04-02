@@ -6,9 +6,9 @@
 
 class CalcFileHashesTask : public QRunnable
 {
-  VtFile *file;
+  QVtFile *file;
 public:
-  CalcFileHashesTask(VtFile  *file);
+  CalcFileHashesTask(QVtFile  *file);
 
   void run(void);
 };

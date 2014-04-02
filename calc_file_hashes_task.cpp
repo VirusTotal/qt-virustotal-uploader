@@ -5,7 +5,7 @@
 
 #include "calc_file_hashes_task.h"
 
-CalcFileHashesTask::CalcFileHashesTask(VtFile *vt_file)
+CalcFileHashesTask::CalcFileHashesTask(QVtFile *vt_file)
 {
   file = vt_file;
 }
