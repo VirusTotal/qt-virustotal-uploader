@@ -4,12 +4,16 @@
 #include <QSettings>
 #include <QDir>
 #include <QThreadPool>
+#include <QLabel>
+#include <QTextEdit>
+#include <QDesktopServices>
+
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "scanner_table_widget.h"
 #include "vt-log.h"
-#include "vtfile.h"
+#include "qvtfile.h"
 
 #define LOG_TIME_COL 0
 #define LOG_CODE_COL 1
@@ -43,15 +47,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
   QCoreApplication::setOrganizationName("VirusTotal");
   QCoreApplication::setOrganizationDomain("virustotal.com");
-  QCoreApplication::setApplicationName("Q Uploader");
+  QCoreApplication::setApplicationName("VirusTotal Uploader");
 
 
-  emit __onLogMsgRecv(VT_LOG_DEBUG, 0 ,
+  emit LogMsgRecv(VT_LOG_DEBUG, 0 ,
       tr("VirusTotal Uplaoder") + " " + VT_UPLOADER_VERSION + " "
       + tr("Compiled:") + __DATE__ + " " + __TIME__);
 
   // Drag drop signals
   connect(ui->ScannerTableWidget_scan_table, SIGNAL(dropped(const QMimeData*)), this, SLOT(OnDropRecv(const QMimeData*)));
+  connect(this, SIGNAL(dropped(const QMimeData*)), this, SLOT(OnDropRecv(const QMimeData*)));
+
   connect(this, SIGNAL(dropped(const QMimeData*)), this, SLOT(OnDropRecv(const QMimeData*)));
 
   minute_timer = new QTimer(this);
@@ -61,7 +67,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
   state_timer = new QTimer(this);
   connect(state_timer, SIGNAL(timeout()), this, SLOT(StateTimerSlot()));
-  state_timer->start(3000);
+  state_timer->start(1500);
+
+  ui->ScannerTableWidget_scan_table->setContextMenuPolicy(Qt::CustomContextMenu);
+  ui->ScannerTableWidget_scan_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  connect(ui->ScannerTableWidget_scan_table, SIGNAL(customContextMenuRequested(QPoint)),
+             SLOT(customMenuRequested(QPoint)));
+
+
 }
 
 MainWindow::~MainWindow()
@@ -98,8 +111,15 @@ void MainWindow::dragLeaveEvent(QDragLeaveEvent *event) {
   event->accept();
 }
 
+//void QWidget::closeEvent ( QCloseEvent * event )   [virtual protected]
+void MainWindow::closeEvent(QCloseEvent *event) {
+  // do some data saves or something else
+  qDebug() << "MainWindow::closeEvent ";
+  QThreadPool::globalInstance()->waitForDone(1234);
+  event->accept();
+}
 
-void MainWindow::__onLogMsgRecv(int log_level, int err_code, QString Msg)
+void MainWindow::LogMsgRecv(int log_level, int err_code, QString Msg)
 {
 
   QTableWidgetItem *Time_Cell_Item;
@@ -169,8 +189,9 @@ void MainWindow::__onLogMsgRecv(int log_level, int err_code, QString Msg)
 void MainWindow::OnDropRecv(const QMimeData *mime_data)
 {
 
-  emit __onLogMsgRecv(VT_LOG_DEBUG, 0 , tr("Dropped ") + mime_data->text());
+  emit LogMsgRecv(VT_LOG_DEBUG, 0 , tr("Dropped ") + mime_data->text());
   QString file_path;
+  QVtFile *file = NULL;
   int file_uri_pos = mime_data->text().indexOf("file://");
 
   if (file_uri_pos == -1) {
@@ -179,7 +200,9 @@ void MainWindow::OnDropRecv(const QMimeData *mime_data)
   }
   file_path = mime_data->text().mid(strlen("file://"));
 
-  file_vector.append(new QVtFile(file_path, this));
+  file = new QVtFile(file_path, this);
+  connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
+  file_vector.append(file);
 
   ReDrawScannerTable();
 }
@@ -192,6 +215,89 @@ void MainWindow::MinuteTimerSlot(void)
 
   qDebug() << "Settings quota = " << minute_quota;
   req_per_minute_quota = minute_quota;
+}
+
+void MainWindow::RemoveRowSlot(void)
+{
+  QObject* obj = sender();
+  QAction *action = qobject_cast<QAction *>(obj);
+  int row = action->data().toInt();
+
+  qDebug() << "Remove row: " << row;
+
+  if (ui->ScannerTableWidget_scan_table->rowCount() > row)
+    ui->ScannerTableWidget_scan_table->removeRow(row);
+  else
+    emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Invalid Row ") + row);
+
+  if (file_vector.count() > row)
+    file_vector.remove(row);
+  else
+    emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Invalid Row ") + row);
+}
+
+void MainWindow::ViewOnVTSlot(void)
+{
+  QObject* obj = sender();
+  QAction *action = qobject_cast<QAction *>(obj);
+  int row = action->data().toInt();
+
+  if (row >= file_vector.count()) {
+    emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Invalid Row to view on VT") + row);
+    return;
+  }
+
+  QString sha256str = ui->ScannerTableWidget_scan_table->item(row,SCAN_TABLE_SHA256_COL)->text();
+  if (sha256str.length() < 10) {
+    emit LogMsgRecv(VT_LOG_WARNING, 0 , tr("SHA not ready") + row);
+    return;
+  }
+  QDesktopServices::openUrl("https://www.virustotal.com/latest-scan/"+sha256str);
+}
+
+void MainWindow::RescanRowSlot(void)
+{
+  QObject* obj = sender();
+  QAction *action = qobject_cast<QAction *>(obj);
+  int row = action->data().toInt();
+  QVtFile *file = NULL;
+
+  qDebug() << "Rescan row: " << row;
+
+  if (ui->ScannerTableWidget_scan_table->rowCount() > row
+  && file_vector.count() > row) {
+    file = file_vector[row];
+    file->ReScan();
+  } else
+    emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Invalid Row ") + row);
+
+}
+
+void MainWindow::customMenuRequested(QPoint pos){
+    QModelIndex index=ui->ScannerTableWidget_scan_table->indexAt(pos);
+    int row = index.row();
+    //QString sha256str;
+    QAction *rescan_action = new QAction("ReScan", this);
+    QAction *remove_action = new QAction("Remove from list", this);
+    QAction *view_action = new QAction("View on VT", this);
+
+
+
+    rescan_action->setData(row);
+    remove_action->setData(row);
+    view_action->setData(row);
+    connect(rescan_action, SIGNAL(triggered()), this, SLOT(RescanRowSlot()));
+    connect(remove_action, SIGNAL(triggered()), this, SLOT(RemoveRowSlot()));
+    connect(view_action, SIGNAL(triggered()), this, SLOT(ViewOnVTSlot()));
+
+//    qDebug() << "sha;" << sha256str;
+    QMenu *menu=new QMenu(this);
+    menu->addAction(rescan_action);
+    menu->addAction(remove_action);
+    menu->addAction(view_action);
+
+    menu->popup(ui->ScannerTableWidget_scan_table->viewport()->mapToGlobal(pos));
+    qDebug() << "index=" << index;
 }
 
 void MainWindow::ReDrawScannerTable(void)
@@ -228,8 +334,8 @@ void MainWindow::ReDrawScannerTable(void)
     QString state_str = file->GetStateStr();
     ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL, new QTableWidgetItem(state_str) );
     ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_FULLPATH_COL, new QTableWidgetItem(file->fileName()) );
-
     ui->ScannerTableWidget_scan_table->resizeColumnsToContents();
+
 
   }
 }
@@ -237,6 +343,10 @@ void MainWindow::ReDrawScannerTable(void)
 void MainWindow::RunStateMachine(void)
 {
   int num_files;
+  QString link_url;
+  QString detections_str;
+  qint64 state_change_msec;
+  const int wait_delay = 31000;
 
   num_files = file_vector.count();
 
@@ -244,7 +354,12 @@ void MainWindow::RunStateMachine(void)
     QVtFile *file = file_vector.operator[](i);
     QString state_str = file->GetStateStr();
     enum QVtFileState file_state = file->GetState();
-    ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL, new QTableWidgetItem(state_str) );
+
+    state_change_msec = QDateTime::currentDateTime().toMSecsSinceEpoch()
+                        - file->GetStateChangeTime().toMSecsSinceEpoch();
+
+    ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
+                                               new QTableWidgetItem(state_str) );
      switch (file_state)
      {
        case kNew:
@@ -262,11 +377,87 @@ void MainWindow::RunStateMachine(void)
          ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_MD5_COL,
            new QTableWidgetItem(QString(file->GetMd5().toHex())) );
 
+         // if we have quota
+         if (req_per_minute_quota) {
+           file->CheckReport();
+           req_per_minute_quota--;
+         }
          break;
+       case kReportFeteched:
+
+         QLabel *link_label;
+
+         if (file->GetTotalScans() > 20) {
+           QLabel *detections_label;
+           if (file->GetPositives() == 0) {
+             detections_str = "<span style='color:green'>";
+           } else if (file->GetPositives() >= 5) {
+             detections_str = "<span style='color:red'>";
+           } else {
+             detections_str = "<span style='color:orange'>";
+           }
+           detections_str += QString::number(file->GetPositives()) + " / "
+               + QString::number(file->GetTotalScans()) + "</span>";
+
+           detections_label = new QLabel(detections_str);
+           detections_label->setTextFormat(Qt::RichText);
+           ui->ScannerTableWidget_scan_table->setCellWidget(i, SCAN_TABLE_DETECTIONS_COL, detections_label);
+            file->SetState(kStopped);
+         } else {
+           file->SetState(kWaitForReport);
+         }
+         /*
+         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_DETECTIONS_COL,
+           new QTableWidgetItem(
+             QString::number(file->GetPositives()) + " / " +
+             QString::number(file->GetTotalScans())));
+*/
+         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_MESSAGE_COL,
+           new QTableWidgetItem(QString(file->GetVerboseMsg())) );
+
+
+         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_DATE_COL,
+           new QTableWidgetItem(file->GetScanDate().toString(Qt::DefaultLocaleShortDate)) );
+
+//         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_LINK_COL,
+           //new QTableWidgetItem( file->GetPermalink()));
+
+        link_url = "<a href='" + file->GetPermalink()+ "'>" + file->GetPermalink() + "</a>";
+        link_label= new QLabel(link_url);
+        link_label->setTextFormat(Qt::RichText);
+        link_label->setOpenExternalLinks(true);
+
+        ui->ScannerTableWidget_scan_table->setCellWidget(i, SCAN_TABLE_LINK_COL, link_label);
+
+
+         break;
+       case KNoReportExists: // 5
+         qDebug() << "No Report..Scan file";
+         if (req_per_minute_quota) {
+           file->Scan();
+           req_per_minute_quota--;
+         }
+         break;
+       case kWaitForReport:
+
+
+         // if we have quota
+         if (state_change_msec < wait_delay) {
+           ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
+             new QTableWidgetItem("Wait "
+             + QString::number((wait_delay -state_change_msec)/1000)));
+
+         } else if (req_per_minute_quota > 0) {
+           file->CheckReport();
+           req_per_minute_quota--;
+         }
+         break;
+       case kRescan:
        case kScan:
        case kErrorTooBig:
        case kErrorAccess:
        case kStopped:
+       case kError:
          break;
          // do nothing
        default:
@@ -280,7 +471,7 @@ void MainWindow::RunStateMachine(void)
 
 void MainWindow::StateTimerSlot(void)
 {
- qDebug() << "StateTimerSlot";
+// qDebug() << "StateTimerSlot";
  RunStateMachine();
 
 }

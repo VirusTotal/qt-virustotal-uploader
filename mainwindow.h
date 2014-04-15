@@ -10,7 +10,7 @@
 #include <QTimer>
 
 
-#include "vtfile.h"
+#include "qvtfile.h"
 
 namespace Ui {
 class MainWindow;
@@ -40,16 +40,22 @@ private:
   void RunStateMachine(void);
 
 private slots:
-  void __onLogMsgRecv(int level, int code, QString Msg);
+  void LogMsgRecv(int level, int code, QString Msg);
   void OnDropRecv(const QMimeData *data);
   void MinuteTimerSlot(void);
   void StateTimerSlot(void);
+  void customMenuRequested(QPoint pos);
+  void RemoveRowSlot(void);
+  void ViewOnVTSlot(void);
+  void RescanRowSlot(void);
 
 protected:
   void dragEnterEvent(QDragEnterEvent *event);
   void dragMoveEvent(QDragMoveEvent *event);
   void dragLeaveEvent(QDragLeaveEvent *event);
   void dropEvent(QDropEvent *event);
+  void closeEvent(QCloseEvent *event);
+
 
 };
 
