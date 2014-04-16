@@ -33,6 +33,7 @@ void ScanFileTask::ScanSmallFile(void)
 
   if (ret) {
     qDebug() << "Error opening fetching report " << QString(file->GetSha256().toHex()) << "  " << ret;
+     file->SetState(kWaitForReport);
     emit LogMsg(VT_LOG_ERR, ret, "Error fetching report");
   } else {
     response = VtFile_getResponse(api);
@@ -57,6 +58,7 @@ void ScanFileTask::ScanSmallFile(void)
     if (response_code == 1) {
       file->SetScanDate(QDateTime::currentDateTime());
       file->SetState(kWaitForReport);
+      file->SetUploaded(true);
     } else {
       // FIXME  what other codes?
        goto free_response;
