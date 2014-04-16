@@ -32,6 +32,11 @@ void QVtFile::InitCommon(void)
 {
   SetState(kNew);
   scan_id = "";
+  verbose_msg = "";
+  permalink = "";
+  file_uploaded = false;
+  positive_scans = 0;
+  total_scans = 0;
 }
 
 
@@ -85,7 +90,7 @@ QString QVtFile::GetStateStr(void)
     case kError:
       return tr("Error");
     default:
-     return  QString("Undefined state") + QString::number(vt_file_state);
+     return  QString("QVtFile::GetStateStr Undefined state") + QString::number(vt_file_state);
   }
 }
 
@@ -156,6 +161,10 @@ void QVtFile::SetScanId(QString id)
 {
   scan_id = id;
 }
+void QVtFile::SetUploaded(bool val)
+{
+  file_uploaded = val;
+}
 
 QByteArray QVtFile::GetMd5()
 {
@@ -201,6 +210,12 @@ QString QVtFile::GetScanId()
 {
   return scan_id;
 }
+
+bool QVtFile::GetUploaded()
+{
+  return file_uploaded;
+}
+
 QDateTime QVtFile::GetStateChangeTime()
 {
   return last_state_change;

@@ -7,7 +7,7 @@
 #include <QLabel>
 #include <QTextEdit>
 #include <QDesktopServices>
-
+#include <QFileInfo>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -75,6 +75,14 @@ MainWindow::MainWindow(QWidget *parent) :
              SLOT(customMenuRequested(QPoint)));
 
 
+  ui->ScannerTableWidget_scan_table->horizontalHeader()->setSectionResizeMode(
+       SCAN_TABLE_FULLPATH_COL, QHeaderView::Stretch);
+  ui->tableWidget_log_msg->horizontalHeader()->setSectionResizeMode(
+       LOG_MSG_COL, QHeaderView::Stretch);
+
+  this->setWindowIcon(QIcon("vtlogo-sigma.png"));
+  QMenuBar *menuBar = new QMenuBar(0);
+  QAction *settings_action = menuBar->addAction(tr("Settings"));
 }
 
 MainWindow::~MainWindow()
@@ -139,6 +147,10 @@ void MainWindow::LogMsgRecv(int log_level, int err_code, QString Msg)
 
   Level_Cell_Item = new QTableWidgetItem();
 
+  if (err_code == 204) {
+    req_per_minute_quota = 0;
+  }
+
   switch (log_level)
   {
     case VT_LOG_EMERG:   // system is unusable
@@ -192,17 +204,48 @@ void MainWindow::OnDropRecv(const QMimeData *mime_data)
   emit LogMsgRecv(VT_LOG_DEBUG, 0 , tr("Dropped ") + mime_data->text());
   QString file_path;
   QVtFile *file = NULL;
-  int file_uri_pos = mime_data->text().indexOf("file://");
+  QFileInfo file_info;
 
-  if (file_uri_pos == -1) {
-    // not found
-    return;
+  // check for our needed mime type, here a file or a list of files
+  if (mime_data->hasUrls())
+  {
+   //  QStringList pathList;
+    QList<QUrl> urlList = mime_data->urls();
+
+    qDebug() << "urlList.size():"  << urlList.size();
+    // extract the local paths of the files
+    for (int i = 0; i < urlList.size() && i < 1024; ++i)
+    {
+      QUrl url = urlList.at(i);
+      file_path = url.path();
+      qDebug() << "urlList.at(i):"  << urlList.at(i);
+      qDebug() << "url "  << " : "  << file_path;
+      //pathList.append(urlList.at(i).toLocalFile());
+      if (!url.isLocalFile()) {
+        // not local
+        emit LogMsgRecv(VT_LOG_INFO,
+          0 , tr("non file::// types not supported.  Please request this feature. ")
+          + mime_data->text());
+        return;
+      }
+      file_info.setFile(file_path);
+
+      if (!file_info.isReadable()) {
+        emit LogMsgRecv(VT_LOG_ERR, 0 , tr("File not readable.") + file_path);
+        continue;
+      }
+      if (file_info.isFile()) {
+        file = new QVtFile(file_path, this);
+        connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
+        file_vector.append(file);
+      } else if (file_info.isDir()) {
+        qDebug() << "Directory parsing needed";
+      } else {
+        emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Unknown file type ") + mime_data->text());
+      }
+    }
+
   }
-  file_path = mime_data->text().mid(strlen("file://"));
-
-  file = new QVtFile(file_path, this);
-  connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
-  file_vector.append(file);
 
   ReDrawScannerTable();
 }
@@ -346,7 +389,7 @@ void MainWindow::RunStateMachine(void)
   QString link_url;
   QString detections_str;
   qint64 state_change_msec;
-  const int wait_delay = 31000;
+  const int wait_delay = 63000;
 
   num_files = file_vector.count();
 
@@ -379,8 +422,8 @@ void MainWindow::RunStateMachine(void)
 
          // if we have quota
          if (req_per_minute_quota) {
-           file->CheckReport();
            req_per_minute_quota--;
+           file->CheckReport();
          }
          break;
        case kReportFeteched:
@@ -432,10 +475,17 @@ void MainWindow::RunStateMachine(void)
 
          break;
        case KNoReportExists: // 5
-         qDebug() << "No Report..Scan file";
-         if (req_per_minute_quota) {
-           file->Scan();
-           req_per_minute_quota--;
+
+         if (file->GetUploaded()) {
+           // already uploaed  wait more
+           qDebug() << "No Report..already uploaded,  wait more";
+           file->SetState(kWaitForReport);
+         } else {
+           qDebug() << "No Report..Scan file";
+           if (req_per_minute_quota) {
+             req_per_minute_quota--;
+             file->Scan();
+           }
          }
          break;
        case kWaitForReport:
@@ -448,8 +498,8 @@ void MainWindow::RunStateMachine(void)
              + QString::number((wait_delay -state_change_msec)/1000)));
 
          } else if (req_per_minute_quota > 0) {
-           file->CheckReport();
            req_per_minute_quota--;
+           file->CheckReport();
          }
          break;
        case kRescan:
@@ -466,7 +516,10 @@ void MainWindow::RunStateMachine(void)
      }
   }
   ui->ScannerTableWidget_scan_table->resizeColumnsToContents();
-
+  ui->ScannerTableWidget_scan_table->horizontalHeader()->setSectionResizeMode(
+       SCAN_TABLE_FULLPATH_COL, QHeaderView::Stretch);
+  ui->statusBar->showMessage("Quota Remaining:"
+    + QString::number(req_per_minute_quota) + " Request(s)/Minute");
 }
 
 void MainWindow::StateTimerSlot(void)

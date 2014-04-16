@@ -35,6 +35,8 @@ private:
   QTimer *minute_timer;
   QTimer *state_timer;
   QVector<QVtFile *> file_vector;
+  //QIcon icon;
+  QMenuBar *menuBar;
 
   void ReDrawScannerTable(void);
   void RunStateMachine(void);

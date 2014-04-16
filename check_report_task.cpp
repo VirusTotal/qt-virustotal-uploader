@@ -26,10 +26,15 @@ void CheckReportTask::run(void)
 //  connect(this, SIGNAL(LogMsg(int,int,QString)),file, SLOT(RelayLogMsg(int,int,QString)));
   VtFile_setApiKey(api, file->GetApiKey().toStdString().c_str());
 
-  ret = VtFile_report(api, QString(file->GetSha256().toHex()).toStdString().c_str());
+  if (file->GetScanId().isEmpty()) {
+    ret = VtFile_report(api, QString(file->GetSha256().toHex()).toStdString().c_str());
+  } else {
+    ret = VtFile_report(api, file->GetScanId().toStdString().c_str());
+  }
 
   if (ret) {
     qDebug() << "Error opening fetching report " << QString(file->GetSha256().toHex()) << "  " << ret;
+    file->SetState(kWaitForReport); // wait and retry
     emit LogMsg(VT_LOG_ERR, ret, "Error fetching report");
   } else {
     response = VtFile_getResponse(api);
@@ -47,6 +52,10 @@ void CheckReportTask::run(void)
       qDebug() << "report response code: " <<  response_code;
       if (response_code == 0) {
         file->SetState(KNoReportExists);
+        goto free_response;
+      } else if (response_code == -2) {
+        //"Your resource is queued for analysis"
+        file->SetState(kWaitForReport);
         goto free_response;
       }
     }

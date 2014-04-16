@@ -8,7 +8,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = qt-vt-uploader
+TARGET = "VirusTotalUploader"
 TEMPLATE = app
 
 QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.9

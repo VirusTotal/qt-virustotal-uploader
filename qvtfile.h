@@ -36,6 +36,7 @@ private:
   QDateTime last_state_change;
   QString permalink;
   QString scan_id;
+  bool file_uploaded;
   int positive_scans;
   int total_scans;
   void InitCommon(void);
@@ -60,6 +61,8 @@ public:
   void SetScanDate(QDateTime d);
   void SetPermalink(QString link);
   void SetScanId(QString id);
+  void SetUploaded(bool val=true);
+
 
   QByteArray GetMd5();
   QByteArray GetSha1();
@@ -73,6 +76,7 @@ public:
   QString GetPermalink();
   QString GetScanId();
   QDateTime GetStateChangeTime();
+  bool GetUploaded();
 
   void CalculateHashes(void);
   void CheckReport(void);

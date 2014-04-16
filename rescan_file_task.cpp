@@ -31,7 +31,8 @@ void RescanFileTask::run(void)
       0, 0, 0, NULL, false);
 
   if (ret) {
-    qDebug() << "Error opening fetching report " << QString(file->GetSha256().toHex()) << "  " << ret;
+     qDebug() << "Error opening fetching report " << QString(file->GetSha256().toHex()) << "  " << ret;
+     file->SetState(kWaitForReport);
     emit LogMsg(VT_LOG_ERR, ret, "Error fetching report");
   } else {
     response = VtFile_getResponse(api);
