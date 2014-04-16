@@ -22,7 +22,7 @@ win32 {
   INCLUDEPATH += "C:\Work\include"
 }
 
-
+ICON = vticons.icns
 
 SOURCES += main.cpp\
         mainwindow.cpp \
