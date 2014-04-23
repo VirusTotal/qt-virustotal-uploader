@@ -184,7 +184,7 @@
     </rect>
    </property>
    <property name="nativeMenuBar">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -208,9 +208,12 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="action_settings">
+  <action name="action_preferences">
    <property name="text">
-    <string>Settings</string>
+    <string>preferences</string>
+   </property>
+   <property name="toolTip">
+    <string>preferences</string>
    </property>
   </action>
   <action name="action_close">

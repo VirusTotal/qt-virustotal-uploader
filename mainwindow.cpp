@@ -11,9 +11,11 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "settings_dialog.h"
 #include "scanner_table_widget.h"
 #include "vt-log.h"
 #include "qvtfile.h"
+#include "add_dir_task.h"
 
 #define LOG_TIME_COL 0
 #define LOG_CODE_COL 1
@@ -44,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
   ui->setupUi(this);
   setAcceptDrops(true);
   req_per_minute_quota = 0;
+  settings_dialog = NULL;
 
   QCoreApplication::setOrganizationName("VirusTotal");
   QCoreApplication::setOrganizationDomain("virustotal.com");
@@ -81,8 +84,11 @@ MainWindow::MainWindow(QWidget *parent) :
        LOG_MSG_COL, QHeaderView::Stretch);
 
   this->setWindowIcon(QIcon("vtlogo-sigma.png"));
-  QMenuBar *menuBar = new QMenuBar(0);
-  QAction *settings_action = menuBar->addAction(tr("Settings"));
+
+
+  QAction *action_preferences = new QAction("Preferences", this);
+  connect(action_preferences, SIGNAL(triggered()), this, SLOT(DisplayPeferencesWindow()));
+  this->ui->menuFile->addAction(action_preferences);
 }
 
 MainWindow::~MainWindow()
@@ -123,7 +129,7 @@ void MainWindow::dragLeaveEvent(QDragLeaveEvent *event) {
 void MainWindow::closeEvent(QCloseEvent *event) {
   // do some data saves or something else
   qDebug() << "MainWindow::closeEvent ";
-  QThreadPool::globalInstance()->waitForDone(1234);
+  QThreadPool::globalInstance()->waitForDone();
   event->accept();
 }
 
@@ -197,13 +203,34 @@ void MainWindow::LogMsgRecv(int log_level, int err_code, QString Msg)
   ui->tableWidget_log_msg->resizeColumnsToContents();
 
 }
+void MainWindow::AddFile(QString file_path)
+{
+  QVtFile *file = NULL;
+  file = new QVtFile(file_path, this);
+  connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
+  file_vector.append(file);
+  ReDrawScannerTable();
+}
+
+void MainWindow::AddDir(QString path)
+{
+  AddDirTask *task = new AddDirTask(path);
+
+  QObject::connect(task, SIGNAL(LogMsg(int,int,QString)),
+    this, SLOT(LogMsgRecv(int,int,QString)),  Qt::QueuedConnection);
+
+  QObject::connect(task, SIGNAL(AddFile(QString)),
+    this, SLOT(AddFile(QString)),  Qt::QueuedConnection);
+
+  // QThreadPool takes ownership and deletes 'task' automatically
+  QThreadPool::globalInstance()->start(task);
+}
 
 void MainWindow::OnDropRecv(const QMimeData *mime_data)
 {
 
   emit LogMsgRecv(VT_LOG_DEBUG, 0 , tr("Dropped ") + mime_data->text());
   QString file_path;
-  QVtFile *file = NULL;
   QFileInfo file_info;
 
   // check for our needed mime type, here a file or a list of files
@@ -235,11 +262,9 @@ void MainWindow::OnDropRecv(const QMimeData *mime_data)
         continue;
       }
       if (file_info.isFile()) {
-        file = new QVtFile(file_path, this);
-        connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
-        file_vector.append(file);
+        emit AddFile(file_path);
       } else if (file_info.isDir()) {
-        qDebug() << "Directory parsing needed";
+        AddDir(file_path);
       } else {
         emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Unknown file type ") + mime_data->text());
       }
@@ -314,6 +339,17 @@ void MainWindow::RescanRowSlot(void)
   } else
     emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Invalid Row ") + row);
 
+}
+
+void MainWindow::DisplayPeferencesWindow(void)
+{
+  qDebug() << "MainWindow::DisplayPeferencesWindow " << settings_dialog;
+
+  if (!settings_dialog) {
+    settings_dialog = new SettingsDialog();
+  }
+
+  settings_dialog->show();
 }
 
 void MainWindow::customMenuRequested(QPoint pos){
@@ -425,6 +461,8 @@ void MainWindow::RunStateMachine(void)
            req_per_minute_quota--;
            file->CheckReport();
          }
+         break;
+       case kCheckReport:
          break;
        case kReportFeteched:
 

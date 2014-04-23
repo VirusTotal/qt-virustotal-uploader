@@ -32,7 +32,8 @@ SOURCES += main.cpp\
     check_report_task.cpp \
     settings_dialog.cpp \
     scan_file_task.cpp \
-    rescan_file_task.cpp
+    rescan_file_task.cpp \
+    add_dir_task.cpp
 
 HEADERS  += mainwindow.h vt-log.h \
     scanner_table_widget.h \
@@ -41,7 +42,8 @@ HEADERS  += mainwindow.h vt-log.h \
     check_report_task.h \
     settings_dialog.h \
     scan_file_task.h \
-    rescan_file_task.h
+    rescan_file_task.h \
+    add_dir_task.h
 
 FORMS    += mainwindow.ui \
     settings_dialog.ui

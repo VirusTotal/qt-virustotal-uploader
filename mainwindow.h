@@ -11,6 +11,7 @@
 
 
 #include "qvtfile.h"
+#include "settings_dialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -37,9 +38,11 @@ private:
   QVector<QVtFile *> file_vector;
   //QIcon icon;
   QMenuBar *menuBar;
+  SettingsDialog *settings_dialog;
 
   void ReDrawScannerTable(void);
   void RunStateMachine(void);
+  void AddDir(QString path);
 
 private slots:
   void LogMsgRecv(int level, int code, QString Msg);
@@ -50,6 +53,8 @@ private slots:
   void RemoveRowSlot(void);
   void ViewOnVTSlot(void);
   void RescanRowSlot(void);
+  void DisplayPeferencesWindow();
+  void AddFile(QString file_path);
 
 protected:
   void dragEnterEvent(QDragEnterEvent *event);

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>581</width>
-    <height>294</height>
+    <width>756</width>
+    <height>389</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>240</y>
+     <x>40</x>
+     <y>340</y>
      <width>341</width>
      <height>32</height>
     </rect>
@@ -34,44 +34,87 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>561</width>
-     <height>241</height>
+     <width>721</width>
+     <height>311</height>
     </rect>
    </property>
    <layout class="QFormLayout" name="formLayout">
     <property name="fieldGrowthPolicy">
      <enum>QFormLayout::FieldsStayAtSizeHint</enum>
     </property>
-    <item row="0" column="1">
-     <widget class="QCheckBox" name="checkBox">
+    <item row="0" column="0">
+     <widget class="QLabel" name="label_2">
       <property name="text">
-       <string>Custom API Key?</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="lineEdit">
-      <property name="maxLength">
-       <number>256</number>
+       <string>Custom API Key.  (leave blank for default)</string>
       </property>
      </widget>
     </item>
     <item row="1" column="0">
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>Key:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
      <widget class="QLabel" name="label_3">
       <property name="text">
        <string>Max Request Rate Per Minute</string>
       </property>
      </widget>
     </item>
-    <item row="2" column="1">
-     <widget class="QSpinBox" name="spinBox">
+    <item row="4" column="0">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>Rescan with old reports ?</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QRadioButton" name="rescan_0_radioButton">
+        <property name="text">
+         <string>Never</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rescan_7_radioButton">
+        <property name="text">
+         <string>Older Than 7 Days</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rescan_30_radioButton">
+        <property name="text">
+         <string>Older Than 30 Days</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="5" column="0">
+     <widget class="QLabel" name="label_5">
+      <property name="text">
+       <string>When Scanning Directories Scan:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="1">
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QRadioButton" name="dir_only_exe_radioButton">
+        <property name="text">
+         <string>Only Executables</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="dir_all_files_radioButton">
+        <property name="text">
+         <string>All Files</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="1">
+     <widget class="QSpinBox" name="max_req_rate_spinBox">
       <property name="suffix">
        <string/>
       </property>
@@ -83,13 +126,16 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="1">
-     <widget class="QCheckBox" name="checkBox_2">
-      <property name="text">
-       <string>Auto-Rescan files more than 7 days old?</string>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="apikey_lineEdit">
+      <property name="minimumSize">
+       <size>
+        <width>400</width>
+        <height>0</height>
+       </size>
       </property>
-      <property name="checked">
-       <bool>true</bool>
+      <property name="maxLength">
+       <number>256</number>
       </property>
      </widget>
     </item>
