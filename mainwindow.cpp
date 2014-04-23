@@ -206,6 +206,12 @@ void MainWindow::LogMsgRecv(int log_level, int err_code, QString Msg)
 void MainWindow::AddFile(QString file_path)
 {
   QVtFile *file = NULL;
+
+  for (int i = 0; i < file_vector.length(); i++) {
+    if (file_vector[i]->fileName() == file_path)
+      return;
+  }
+
   file = new QVtFile(file_path, this);
   connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
   file_vector.append(file);
