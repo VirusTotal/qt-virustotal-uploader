@@ -59,10 +59,12 @@ private slots:
   void ViewOnVTSlot(void);
   void RescanRowSlot(void);
   void DisplayPeferencesWindow();
-  void AddFile(QString file_path);
   void AddAppBundle(QString bundle_path);
   void DisplayTosDialog(void);
   void DisplayFileDialog(void);
+
+public slots:
+  void AddFile(QString file_path);
 
 protected:
   void dragEnterEvent(QDragEnterEvent *event);
@@ -70,8 +72,6 @@ protected:
   void dragLeaveEvent(QDragLeaveEvent *event);
   void dropEvent(QDropEvent *event);
   void closeEvent(QCloseEvent *event);
-  bool event(QEvent *event);
-
 
 };
 

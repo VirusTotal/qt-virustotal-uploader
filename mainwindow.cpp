@@ -659,16 +659,4 @@ void MainWindow::StateTimerSlot(void)
   state_counter++;
 }
 
-bool MainWindow::event(QEvent *e)
-{
-  //qDebug() << "event";
-  switch (e->type()) {
-  case QEvent::FileOpen:
-      AddFile(static_cast<QFileOpenEvent *>(event)->file());
-
-      return true;
-  default:
-      return QApplication::event(e);
-  }
-}
 

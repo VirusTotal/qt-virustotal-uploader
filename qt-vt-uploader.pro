@@ -12,6 +12,7 @@ TARGET = "VirusTotalUploader"
 TEMPLATE = app
 
 QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
+QMAKE_INFO_PLIST += Info.plist
 CONFIG += static
 
 unix {
@@ -25,6 +26,8 @@ win32 {
 
 QMAKE_CXXFLAGS+= -DNOCRYPT
 QMAKE_CFLAGS+= -DNOCRYPT
+
+
 
 
 ICON = vticons.icns
@@ -42,7 +45,8 @@ SOURCES += main.cpp\
     tos_dialog.cpp \
     ioapi.c \
     zip.c \
-    create_app_zip_task.cpp
+    create_app_zip_task.cpp \
+    vt_uploader_application.cpp
 
 
 HEADERS  += mainwindow.h vt-log.h \
@@ -57,7 +61,8 @@ HEADERS  += mainwindow.h vt-log.h \
     tos_dialog.h \
     ioapi.h \
     zip.h \
-    create_app_zip_task.h
+    create_app_zip_task.h \
+    vt_uploader_application.h
 
 FORMS    += mainwindow.ui \
     settings_dialog.ui \
