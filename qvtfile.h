@@ -5,12 +5,17 @@
 #include <QByteArray>
 #include <QString>
 #include <QDateTime>
+#include <QFileInfo>
+#include <QTemporaryDir>
+
+#include "zip.h"
 
 enum QVtFileState {
   kNew = 0,
   kCheckingHash,
   kHashesCalculated,
   kCheckReport,
+  kCreateAppZip,
   kReportFeteched,
   KNoReportExists,
   kRescan,
@@ -39,7 +44,15 @@ private:
   bool file_uploaded;
   int positive_scans;
   int total_scans;
+  float progress;
+
+  bool is_bundle;
+  int num_files_in_bundle;
+  QTemporaryDir *bundle_tmp_dir;
+  QString bundle_path;
   void InitCommon(void);
+  void CreateBundleZip();
+
 
 
 public:
@@ -62,12 +75,15 @@ public:
   void SetPermalink(QString link);
   void SetScanId(QString id);
   void SetUploaded(bool val=true);
+  void SetBundlePath(QString);
+  void SetProgress(float value);
 
 
   QByteArray GetMd5();
   QByteArray GetSha1();
   QByteArray GetSha256();
   QString GetApiKey();
+  QString GetBundlePath();
 
   int GetPositives();
   int GetTotalScans();
@@ -77,11 +93,16 @@ public:
   QString GetScanId();
   QDateTime GetStateChangeTime();
   bool GetUploaded();
+  float GetProgress();
 
   void CalculateHashes(void);
   void CheckReport(void);
   void Scan();
   void ReScan();
+  static void CancelOperations();
+
+  // Callback from C library
+  static void ProgessUpdateCallback(struct VtFile *vtfile, QVtFile *qfile);
 
 signals:
   void LogMsg(int log_level, int err_code, QString Msg);
@@ -90,5 +111,6 @@ public slots:
   void RelayLogMsg(int log_level, int err_code, QString Msg);
 
 };
+
 
 #endif // VTFILE_H

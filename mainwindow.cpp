@@ -8,6 +8,7 @@
 #include <QTextEdit>
 #include <QDesktopServices>
 #include <QFileInfo>
+#include <QFileDialog>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -47,6 +48,8 @@ MainWindow::MainWindow(QWidget *parent) :
   setAcceptDrops(true);
   req_per_minute_quota = 0;
   settings_dialog = NULL;
+  tos_dialog = NULL;
+  state_counter = 0;
 
   QCoreApplication::setOrganizationName("VirusTotal");
   QCoreApplication::setOrganizationDomain("virustotal.com");
@@ -70,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   state_timer = new QTimer(this);
   connect(state_timer, SIGNAL(timeout()), this, SLOT(StateTimerSlot()));
-  state_timer->start(1500);
+  state_timer->start(500);
 
   ui->ScannerTableWidget_scan_table->setContextMenuPolicy(Qt::CustomContextMenu);
   ui->ScannerTableWidget_scan_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -86,9 +89,18 @@ MainWindow::MainWindow(QWidget *parent) :
   this->setWindowIcon(QIcon("vtlogo-sigma.png"));
 
 
-  QAction *action_preferences = new QAction("Preferences", this);
+  QAction *action_preferences = new QAction(tr("Preferences"), this);
   connect(action_preferences, SIGNAL(triggered()), this, SLOT(DisplayPeferencesWindow()));
   this->ui->menuFile->addAction(action_preferences);
+
+  QAction *action_file_select = new QAction(tr("Select Files"), this);
+  connect(action_file_select, SIGNAL(triggered()), this, SLOT(DisplayFileDialog()));
+  this->ui->menuFile->addAction(action_file_select);
+
+  QAction *tos = new QAction(tr("VirusTotal Terms"), this);
+  connect(tos, SIGNAL(triggered()), this, SLOT(DisplayTosDialog()));
+  this->ui->menuHelp->addAction(tos);
+
 }
 
 MainWindow::~MainWindow()
@@ -129,6 +141,7 @@ void MainWindow::dragLeaveEvent(QDragLeaveEvent *event) {
 void MainWindow::closeEvent(QCloseEvent *event) {
   // do some data saves or something else
   qDebug() << "MainWindow::closeEvent ";
+  QVtFile::CancelOperations();
   QThreadPool::globalInstance()->waitForDone();
   event->accept();
 }
@@ -218,6 +231,21 @@ void MainWindow::AddFile(QString file_path)
   ReDrawScannerTable();
 }
 
+void MainWindow::AddAppBundle(QString file_path)
+{
+  QVtFile *file = NULL;
+  QFileInfo file_info(file_path);
+  QString zip_name = QDir::tempPath() + "/" + file_info.bundleName() + ".app.zip";
+  qDebug() << "AddAppBundle  zip_name: " << zip_name;
+
+  file = new QVtFile(this);
+  connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
+  file->SetBundlePath(file_path);
+  file_vector.append(file);
+  ReDrawScannerTable();
+}
+
+
 void MainWindow::AddDir(QString path)
 {
   AddDirTask *task = new AddDirTask(path);
@@ -227,6 +255,9 @@ void MainWindow::AddDir(QString path)
 
   QObject::connect(task, SIGNAL(AddFile(QString)),
     this, SLOT(AddFile(QString)),  Qt::QueuedConnection);
+
+  QObject::connect(task, SIGNAL(AddAppBundle(QString)),
+    this, SLOT(AddAppBundle(QString)), Qt::QueuedConnection);
 
   // QThreadPool takes ownership and deletes 'task' automatically
   QThreadPool::globalInstance()->start(task);
@@ -352,10 +383,34 @@ void MainWindow::DisplayPeferencesWindow(void)
   qDebug() << "MainWindow::DisplayPeferencesWindow " << settings_dialog;
 
   if (!settings_dialog) {
-    settings_dialog = new SettingsDialog();
+    settings_dialog = new SettingsDialog(this);
   }
 
   settings_dialog->show();
+}
+
+void MainWindow::DisplayTosDialog(void)
+{
+  if (!tos_dialog) {
+    tos_dialog = new ToSDialog(this);
+    connect(tos_dialog, SIGNAL(ToSNotAccepted()), this, SLOT(close()));
+  }
+
+  tos_dialog->setModal(true);
+  tos_dialog->show();
+}
+
+void MainWindow::DisplayFileDialog(void)
+{
+  QStringList files = QFileDialog::getOpenFileNames(this,
+    tr("Select one or more files to open"));
+
+  for (int i= 0; i < files.length(); i++) {
+    QString filename = files[i];
+    qDebug() << "DisplayFileDialog File:" << filename;
+    AddFile(filename);
+  }
+
 }
 
 void MainWindow::customMenuRequested(QPoint pos){
@@ -432,8 +487,28 @@ void MainWindow::RunStateMachine(void)
   QString detections_str;
   qint64 state_change_msec;
   const int wait_delay = 63000;
+  QSettings settings;
+
+  if(state_counter == 0) {
+    // things to run 1st time only
+
+    if (settings.value("ui/show_tos", true).toBool()) {
+      qDebug() << "show_tos " << settings.value("ui/show_tos", true).toBool();
+      DisplayTosDialog();
+    }
+  }
 
   num_files = file_vector.count();
+
+  concurrent_uploads  = 0;
+  for (int i = 0; i < num_files ; i++) {
+    QVtFile *file = file_vector.operator[](i);
+    enum QVtFileState file_state = file->GetState();
+
+    if (file_state == kScan)
+      // count uploading files, so we don't have too many parallel
+      concurrent_uploads++;
+  }
 
   for (int i = 0; i < num_files ; i++) {
     QVtFile *file = file_vector.operator[](i);
@@ -447,11 +522,11 @@ void MainWindow::RunStateMachine(void)
                                                new QTableWidgetItem(state_str) );
      switch (file_state)
      {
+
        case kNew:
          file->CalculateHashes();
          break;
        case kCheckingHash:
-
           break;
        case kHashesCalculated:
 
@@ -469,6 +544,11 @@ void MainWindow::RunStateMachine(void)
          }
          break;
        case kCheckReport:
+         break;
+       case kCreateAppZip:
+         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
+            new QTableWidgetItem(state_str + " "
+            + QString::number(file->GetProgress(), 'f', 2) + "%") );
          break;
        case kReportFeteched:
 
@@ -525,10 +605,12 @@ void MainWindow::RunStateMachine(void)
            qDebug() << "No Report..already uploaded,  wait more";
            file->SetState(kWaitForReport);
          } else {
-           qDebug() << "No Report..Scan file";
-           if (req_per_minute_quota) {
+           qDebug() << "No Report..Scan file quota=" << req_per_minute_quota
+                    << " concurrent_uploads=" << concurrent_uploads;
+           if (req_per_minute_quota && concurrent_uploads < 3) {
              req_per_minute_quota--;
              file->Scan();
+             concurrent_uploads++;
            }
          }
          break;
@@ -548,6 +630,10 @@ void MainWindow::RunStateMachine(void)
          break;
        case kRescan:
        case kScan:
+         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
+           new QTableWidgetItem("Uploading: "
+              + QString::number(file->GetProgress(), 'f', 1) + "%") );
+         break;
        case kErrorTooBig:
        case kErrorAccess:
        case kStopped:
@@ -569,7 +655,20 @@ void MainWindow::RunStateMachine(void)
 void MainWindow::StateTimerSlot(void)
 {
 // qDebug() << "StateTimerSlot";
- RunStateMachine();
+  RunStateMachine();
+  state_counter++;
+}
 
+bool MainWindow::event(QEvent *e)
+{
+  //qDebug() << "event";
+  switch (e->type()) {
+  case QEvent::FileOpen:
+      AddFile(static_cast<QFileOpenEvent *>(event)->file());
+
+      return true;
+  default:
+      return QApplication::event(e);
+  }
 }
 

@@ -2,17 +2,20 @@
 #include <QDir>
 #include <QMimeDatabase>
 #include <QSettings>
+#include <QTemporaryDir>
 
 #include "add_dir_task.h"
 #include "vt-log.h"
+#define DIR_ONLY_EXE_KEY "dir/only_exe"
 
 AddDirTask::AddDirTask(QString path)
 {
   QSettings settings;
   dir_path = path;
 
-  only_executables = settings.value("only_executables", true).toBool();
+  only_executables = settings.value(DIR_ONLY_EXE_KEY, true).toBool();
 }
+
 
 void AddDirTask::ScanDir(QString path, unsigned int depth)
 {
@@ -40,10 +43,16 @@ void AddDirTask::ScanDir(QString path, unsigned int depth)
   }
 }
 
-void AddDirTask::AddAppBundle(QString path)
+/*
+void AddDirTask::AddAppBundle(QFileInfo file_info)
 {
-  emit LogMsg(VT_LOG_NOTICE, 0, "FixME OSX Bundle: " + path);
+  QString file_path = file_info.canonicalFilePath();
+
+  emit LogMsg(VT_LOG_NOTICE, 0, "Found OSX Bundle: " + file_path);
+
 }
+*/
+
 
 void AddDirTask::ScanPath(QFileInfo file_info, unsigned int depth)
 {
@@ -55,8 +64,10 @@ void AddDirTask::ScanPath(QFileInfo file_info, unsigned int depth)
     return;
 
   if (file_info.isBundle()) {
-    qDebug() <<  "OSX app bunndle " << file_info.path();
-    AddAppBundle(file_path);
+    qDebug() <<  "OSX app bunndle " << file_info.canonicalFilePath()
+     << "  BundelName" << file_info.bundleName();
+    emit LogMsg(VT_LOG_NOTICE, 0, "Found OSX Bundle: " + file_info.bundleName());
+    emit AddAppBundle(file_info.canonicalFilePath());
     return;
   } else if (file_info.isDir()) {
     ScanDir(file_path, depth+1);

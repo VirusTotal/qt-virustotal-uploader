@@ -16,6 +16,12 @@ ScanFileTask::ScanFileTask(QVtFile *vt_file)
 
 #define RESP_BUF_SIZE 255
 
+static void progress_update(struct VtFile *vtfile, void *qfile)
+{
+  QVtFile::ProgessUpdateCallback(vtfile, (QVtFile *) qfile);
+}
+
+
 //Scan for a file
 void ScanFileTask::ScanSmallFile(void)
 {
@@ -28,6 +34,8 @@ void ScanFileTask::ScanSmallFile(void)
 
 
   VtFile_setApiKey(api, file->GetApiKey().toStdString().c_str());
+//  VtFile_setProgressCallback(api, QVtFile::ProgessUpdateCallback, (void *)file);
+  VtFile_setProgressCallback(api, progress_update, (void *)file);
 
   ret = VtFile_scan(api, file->fileName().toStdString().c_str());
 
@@ -94,10 +102,11 @@ void ScanFileTask::run(void)
   qint64 fsize= file->size();
 
   qDebug() << "Scanning:  " << file->fileName() << " size " << fsize;
-  if (fsize < 31*1024*1024) {
+  if (fsize < 64*1024*1024) {
     ScanSmallFile();
     return;
   }
+  file->SetState(kErrorTooBig);
   qDebug() << "FixMe large file";
 
 }

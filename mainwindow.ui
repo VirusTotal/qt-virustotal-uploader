@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>VirusTotal Uploader</string>
+   <string>VirusTotal Uploader ( Drag and drop files to window) </string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -24,9 +24,6 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
-        </property>
-        <property name="currentIndex">
-         <number>1</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">

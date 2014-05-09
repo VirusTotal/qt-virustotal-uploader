@@ -3,12 +3,17 @@
 #include <QTime>
 #include <QDebug>
 #include <QSettings>
+#include <QDir>
+#include <QTemporaryDir>
 #include "qvtfile.h"
 #include "calc_file_hashes_task.h"
 #include "check_report_task.h"
 #include "scan_file_task.h"
 #include "rescan_file_task.h"
+#include "create_app_zip_task.h"
 #include "vt-log.h"
+#include "VtFile.h"
+
 
 
 QVtFile::QVtFile(QObject *parent) :
@@ -26,6 +31,11 @@ QVtFile::QVtFile(const QString & name, QObject *parent) :
 
 QVtFile::~QVtFile()
 {
+  if (is_bundle)
+    this->remove();  // delete and cleanup ourself
+
+  if (bundle_tmp_dir)
+    delete (bundle_tmp_dir);
 }
 
 void QVtFile::InitCommon(void)
@@ -37,6 +47,10 @@ void QVtFile::InitCommon(void)
   file_uploaded = false;
   positive_scans = 0;
   total_scans = 0;
+  is_bundle = false;
+  bundle_tmp_dir = NULL;
+  bundle_path = "";
+  progress = 0.0;
 }
 
 
@@ -45,16 +59,69 @@ enum QVtFileState QVtFile::GetState(void)
   return vt_file_state;
 }
 
+void QVtFile::CreateBundleZip()
+{
+  bundle_tmp_dir = new QTemporaryDir();
+  QString zip_name;
+  QFileInfo finfo(bundle_path);
+  CreateAppZipTask *task = new CreateAppZipTask(this);
+
+  if (bundle_tmp_dir->isValid()) {
+    zip_name =  bundle_tmp_dir->path() + "/" + finfo.bundleName() + ".app.zip";
+  } else {
+    zip_name = QDir::tempPath() + "/" + finfo.bundleName() + ".app.zip";
+    emit LogMsg(VT_LOG_DEBUG, 0 , "Tmpdir not valid  using  " + zip_name);
+  }
+
+  this->setFileName(zip_name);
+
+  QObject::connect(task, SIGNAL(LogMsg(int,int,QString)),
+      this, SLOT(RelayLogMsg(int,int,QString)),  Qt::QueuedConnection);
+
+  task->run();
+
+}
+
+void QVtFile::SetBundlePath(QString path)
+{
+  bundle_path = path;
+  is_bundle = true;
+  qDebug() << "QVtFile::SetBundlePath " << path;
+
+
+  SetState(kCreateAppZip);
+
+  CreateBundleZip();
+
+}
+QString QVtFile::GetBundlePath()
+{
+  return bundle_path;
+}
 
 QString QVtFile::GetApiKey(void)
 {
   QSettings settings;
   QString key;
-  const char *default_key = "6d7880429b29ae9d1450f7c82cae7e1c18a630f44b584f8ad1df67659cc2a194";
+
+  // build string avoiding someone dumping the whole thing with strings
+  QString default_key = "";
+  default_key += "70f8a";
+  default_key += "7ffa6";
+  default_key += "68547";
+  default_key += "1afc8";
+  default_key += "5d9202";
+  default_key += "468f72";
+  default_key += "77ae";
+  default_key += "20fa7f7";
+  default_key += "816";
+  default_key += "3aa22b4c8822f18a5a";
+
   key = settings.value("api/key", default_key).toString();
 
-  if (key.length() < 8)
+  if (key.length() < 8) {
     key = default_key;
+  }
 
   return key;
 }
@@ -71,6 +138,8 @@ QString QVtFile::GetStateStr(void)
       return tr("Hashes Calculated");
     case kCheckReport:
       return tr("Checking Report");
+    case kCreateAppZip:
+      return tr("Zipping App");
     case kReportFeteched:
       return tr("Report Fetched");
     case KNoReportExists:
@@ -78,7 +147,7 @@ QString QVtFile::GetStateStr(void)
     case kRescan:
       return tr("Rescan");
     case kScan:
-      return tr("Scanning");
+      return tr("Uploading");
     case kWaitForReport:
         return tr("Waiting");
     case kErrorTooBig:
@@ -102,6 +171,9 @@ void QVtFile::SetState(enum QVtFileState state)
   qDebug() << "SetState NewSate " << vt_file_state << " " << GetStateStr();
 
 }
+
+
+
 
 void QVtFile::CalculateHashes(void)
 {
@@ -264,4 +336,52 @@ void QVtFile::ReScan(void)
   // QThreadPool takes ownership and deletes 'task' automatically
   QThreadPool::globalInstance()->start(task);
 }
+
+void QVtFile::SetProgress(float val)
+{
+  progress = val;
+}
+
+float QVtFile::GetProgress(void)
+{
+  return progress;
+}
+
+static bool cancel_operations = false;
+void QVtFile::CancelOperations(void)
+{
+  cancel_operations = true;
+}
+
+void QVtFile::ProgessUpdateCallback(struct VtFile *vtfile, QVtFile *qfile)
+{
+  int64_t dltotal = 0;
+  int64_t dlnow = 0;
+  int64_t ul_total = 0;
+  int64_t ul_now = 0;
+  float progress = 0.0;
+  qDebug() << "ProgessUpdateCallback";
+  VtFile_getProgress(vtfile, &dltotal, &dlnow, &ul_total, &ul_now);
+
+  // avoid div by 0
+  if (ul_total > 0 && qfile->size() > 0) {
+    //progress = (ul_now / ul_total) * 100.0;
+    progress =  ( (float) ul_now / (float) qfile->size()) * 100.0;
+  }
+
+  // fix rounding so a user won´t see 100.1.  curl wil include the headers in what was uploaded
+  if (progress > 100.0)
+    progress = 100.0;
+
+  qDebug() << "ProgessUpdateCallback ul_now= " << ul_now
+      << " ul_total=" << ul_total
+      << " progress= " << progress;
+  qfile->SetProgress(progress);
+
+  if (cancel_operations) {
+    VtFile_cancelOperation(vtfile);
+  }
+
+}
+
 

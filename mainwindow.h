@@ -10,8 +10,10 @@
 #include <QTimer>
 
 
+
 #include "qvtfile.h"
 #include "settings_dialog.h"
+#include "tos_dialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -39,6 +41,9 @@ private:
   //QIcon icon;
   QMenuBar *menuBar;
   SettingsDialog *settings_dialog;
+  ToSDialog *tos_dialog;
+  long long int state_counter;
+  int concurrent_uploads;
 
   void ReDrawScannerTable(void);
   void RunStateMachine(void);
@@ -55,6 +60,9 @@ private slots:
   void RescanRowSlot(void);
   void DisplayPeferencesWindow();
   void AddFile(QString file_path);
+  void AddAppBundle(QString bundle_path);
+  void DisplayTosDialog(void);
+  void DisplayFileDialog(void);
 
 protected:
   void dragEnterEvent(QDragEnterEvent *event);
@@ -62,6 +70,7 @@ protected:
   void dragLeaveEvent(QDragLeaveEvent *event);
   void dropEvent(QDropEvent *event);
   void closeEvent(QCloseEvent *event);
+  bool event(QEvent *event);
 
 
 };

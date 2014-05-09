@@ -11,16 +11,21 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = "VirusTotalUploader"
 TEMPLATE = app
 
-QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.9
+QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
+CONFIG += static
 
 unix {
   INCLUDEPATH += /usr/local/include/ $$(HOME)/local/include/
-  LIBS += -L/usr/local/lib -L$$(HOME)/local/lib -lcvtapi -lcurl -ljansson
+  LIBS += -L/usr/local/lib -L$$(HOME)/local/lib -lcvtapi -lcurl -ljansson -lz
   QMAKE_CXXFLAGS+= -g3
 }
 win32 {
   INCLUDEPATH += "C:\Work\include"
 }
+
+QMAKE_CXXFLAGS+= -DNOCRYPT
+QMAKE_CFLAGS+= -DNOCRYPT
+
 
 ICON = vticons.icns
 
@@ -33,7 +38,12 @@ SOURCES += main.cpp\
     settings_dialog.cpp \
     scan_file_task.cpp \
     rescan_file_task.cpp \
-    add_dir_task.cpp
+    add_dir_task.cpp \
+    tos_dialog.cpp \
+    ioapi.c \
+    zip.c \
+    create_app_zip_task.cpp
+
 
 HEADERS  += mainwindow.h vt-log.h \
     scanner_table_widget.h \
@@ -43,7 +53,12 @@ HEADERS  += mainwindow.h vt-log.h \
     settings_dialog.h \
     scan_file_task.h \
     rescan_file_task.h \
-    add_dir_task.h
+    add_dir_task.h \
+    tos_dialog.h \
+    ioapi.h \
+    zip.h \
+    create_app_zip_task.h
 
 FORMS    += mainwindow.ui \
-    settings_dialog.ui
+    settings_dialog.ui \
+    tos_dialog.ui
