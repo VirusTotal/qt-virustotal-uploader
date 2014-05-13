@@ -4,7 +4,6 @@
 #include "settings_dialog.h"
 #include "ui_settings_dialog.h"
 
-#define DEFAULT_RESCAN_DAYS 7
 
 SettingsDialog::SettingsDialog(QWidget *parent) :
   QDialog(parent),
@@ -57,6 +56,8 @@ SettingsDialog::~SettingsDialog()
   delete rescan_group;
   delete ui;
 }
+
+
 
 void SettingsDialog::SaveSettings(void)
 {

@@ -89,6 +89,7 @@ public:
   int GetTotalScans();
   QString GetVerboseMsg();
   QDateTime GetScanDate();
+  int GetReportAgeDays();
   QString GetPermalink();
   QString GetScanId();
   QDateTime GetStateChangeTime();

@@ -51,6 +51,7 @@ void QVtFile::InitCommon(void)
   bundle_tmp_dir = NULL;
   bundle_path = "";
   progress = 0.0;
+  scan_date = QDateTime::currentDateTime();
 }
 
 
@@ -271,6 +272,16 @@ QString QVtFile::GetVerboseMsg()
 QDateTime QVtFile::GetScanDate()
 {
   return scan_date;
+}
+int QVtFile::GetReportAgeDays()
+{
+  QDateTime now = QDateTime::currentDateTime();
+  qint64 age;
+
+  age = scan_date.msecsTo(now);
+  age /= 1000; // seconds
+  age /= 86400; // days
+  return age;
 }
 
 QString QVtFile::GetPermalink()

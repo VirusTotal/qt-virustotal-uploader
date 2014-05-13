@@ -488,6 +488,7 @@ void MainWindow::RunStateMachine(void)
   qint64 state_change_msec;
   const int wait_delay = 63000;
   QSettings settings;
+  int rescan_days = settings.value(RESCAN_DAYS_KEY, DEFAULT_RESCAN_DAYS).toInt();
 
   if(state_counter == 0) {
     // things to run 1st time only
@@ -514,135 +515,147 @@ void MainWindow::RunStateMachine(void)
     QVtFile *file = file_vector.operator[](i);
     QString state_str = file->GetStateStr();
     enum QVtFileState file_state = file->GetState();
+    int age_days = 0;
 
     state_change_msec = QDateTime::currentDateTime().toMSecsSinceEpoch()
                         - file->GetStateChangeTime().toMSecsSinceEpoch();
 
     ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
                                                new QTableWidgetItem(state_str) );
-     switch (file_state)
-     {
+    switch (file_state)
+    {
 
-       case kNew:
-         file->CalculateHashes();
-         break;
-       case kCheckingHash:
-          break;
-       case kHashesCalculated:
+      case kNew:
+       file->CalculateHashes();
+       break;
+      case kCheckingHash:
+        break;
+      case kHashesCalculated:
 
-         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_SHA1_COL,
-           new QTableWidgetItem(QString(file->GetSha1().toHex())));
-         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_SHA256_COL,
-           new QTableWidgetItem(QString(file->GetSha256().toHex())));
-         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_MD5_COL,
-           new QTableWidgetItem(QString(file->GetMd5().toHex())) );
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_SHA1_COL,
+         new QTableWidgetItem(QString(file->GetSha1().toHex())));
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_SHA256_COL,
+         new QTableWidgetItem(QString(file->GetSha256().toHex())));
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_MD5_COL,
+         new QTableWidgetItem(QString(file->GetMd5().toHex())) );
 
-         // if we have quota
-         if (req_per_minute_quota) {
-           req_per_minute_quota--;
-           file->CheckReport();
-         }
-         break;
-       case kCheckReport:
-         break;
-       case kCreateAppZip:
-         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
-            new QTableWidgetItem(state_str + " "
-            + QString::number(file->GetProgress(), 'f', 2) + "%") );
-         break;
-       case kReportFeteched:
+       // if we have quota
+       if (req_per_minute_quota) {
+         req_per_minute_quota--;
+         file->CheckReport();
+       }
+       break;
+      case kCheckReport:
+       break;
+      case kCreateAppZip:
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
+          new QTableWidgetItem(state_str + " "
+          + QString::number(file->GetProgress(), 'f', 2) + "%") );
+       break;
+      case kReportFeteched:
 
-         QLabel *link_label;
+       QLabel *link_label;
 
-         if (file->GetTotalScans() > 20) {
-           QLabel *detections_label;
-           if (file->GetPositives() == 0) {
-             detections_str = "<span style='color:green'>";
-           } else if (file->GetPositives() >= 5) {
-             detections_str = "<span style='color:red'>";
-           } else {
-             detections_str = "<span style='color:orange'>";
-           }
-           detections_str += QString::number(file->GetPositives()) + " / "
-               + QString::number(file->GetTotalScans()) + "</span>";
-
-           detections_label = new QLabel(detections_str);
-           detections_label->setTextFormat(Qt::RichText);
-           ui->ScannerTableWidget_scan_table->setCellWidget(i, SCAN_TABLE_DETECTIONS_COL, detections_label);
-            file->SetState(kStopped);
+       // if finished scanning
+       if (file->GetTotalScans() > 20) {
+         QLabel *detections_label;
+         if (file->GetPositives() == 0) {
+           detections_str = "<span style='color:green'>";
+         } else if (file->GetPositives() >= 5) {
+           detections_str = "<span style='color:red'>";
          } else {
-           file->SetState(kWaitForReport);
+           detections_str = "<span style='color:orange'>";
          }
-         /*
-         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_DETECTIONS_COL,
-           new QTableWidgetItem(
-             QString::number(file->GetPositives()) + " / " +
-             QString::number(file->GetTotalScans())));
-*/
-         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_MESSAGE_COL,
-           new QTableWidgetItem(QString(file->GetVerboseMsg())) );
+         detections_str += QString::number(file->GetPositives()) + " / "
+             + QString::number(file->GetTotalScans()) + "</span>";
 
+         detections_label = new QLabel(detections_str);
+         detections_label->setTextFormat(Qt::RichText);
+         ui->ScannerTableWidget_scan_table->setCellWidget(i, SCAN_TABLE_DETECTIONS_COL, detections_label);
 
-         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_DATE_COL,
-           new QTableWidgetItem(file->GetScanDate().toString(Qt::DefaultLocaleShortDate)) );
-
-//         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_LINK_COL,
-           //new QTableWidgetItem( file->GetPermalink()));
-
-        link_url = "<a href='" + file->GetPermalink()+ "'>" + file->GetPermalink() + "</a>";
-        link_label= new QLabel(link_url);
-        link_label->setTextFormat(Qt::RichText);
-        link_label->setOpenExternalLinks(true);
-
-        ui->ScannerTableWidget_scan_table->setCellWidget(i, SCAN_TABLE_LINK_COL, link_label);
-
-
-         break;
-       case KNoReportExists: // 5
-
-         if (file->GetUploaded()) {
-           // already uploaed  wait more
-           qDebug() << "No Report..already uploaded,  wait more";
-           file->SetState(kWaitForReport);
+         age_days = file->GetReportAgeDays();
+         if (rescan_days  // rescan enabled
+             && age_days > rescan_days ){
+           file->ReScan();
          } else {
-           qDebug() << "No Report..Scan file quota=" << req_per_minute_quota
-                    << " concurrent_uploads=" << concurrent_uploads;
-           if (req_per_minute_quota && concurrent_uploads < 3) {
-             req_per_minute_quota--;
-             file->Scan();
-             concurrent_uploads++;
-           }
+           file->SetState(kStopped);
          }
-         break;
-       case kWaitForReport:
+       } else {
+         file->SetState(kWaitForReport);
+       }
+       /*
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_DETECTIONS_COL,
+         new QTableWidgetItem(
+           QString::number(file->GetPositives()) + " / " +
+           QString::number(file->GetTotalScans())));
+      */
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_MESSAGE_COL,
+         new QTableWidgetItem(QString(file->GetVerboseMsg())) );
 
 
-         // if we have quota
-         if (state_change_msec < wait_delay) {
-           ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
-             new QTableWidgetItem("Wait "
-             + QString::number((wait_delay -state_change_msec)/1000)));
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_DATE_COL,
+         new QTableWidgetItem(file->GetScanDate().toString(Qt::DefaultLocaleShortDate)) );
 
-         } else if (req_per_minute_quota > 0) {
+      //         ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_LINK_COL,
+         //new QTableWidgetItem( file->GetPermalink()));
+
+      link_url = "<a href='" + file->GetPermalink()+ "'>" + file->GetPermalink() + "</a>";
+      link_label= new QLabel(link_url);
+      link_label->setTextFormat(Qt::RichText);
+      link_label->setOpenExternalLinks(true);
+
+      ui->ScannerTableWidget_scan_table->setCellWidget(i, SCAN_TABLE_LINK_COL, link_label);
+
+
+       break;
+      case KNoReportExists: // 5
+
+       if (file->GetUploaded()) {
+         // already uploaed  wait more
+         qDebug() << "No Report..already uploaded,  wait more";
+         file->SetState(kWaitForReport);
+       } else {
+         qDebug() << "No Report..Scan file quota=" << req_per_minute_quota
+                  << " concurrent_uploads=" << concurrent_uploads;
+         if (req_per_minute_quota && concurrent_uploads < 3) {
            req_per_minute_quota--;
-           file->CheckReport();
+           file->Scan();
+           concurrent_uploads++;
          }
-         break;
-       case kRescan:
-       case kScan:
+       }
+       break;
+      case kWaitForReport:
+
+
+       // if we have quota
+       if (state_change_msec < wait_delay) {
          ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
-           new QTableWidgetItem("Uploading: "
-              + QString::number(file->GetProgress(), 'f', 1) + "%") );
-         break;
-       case kErrorTooBig:
-       case kErrorAccess:
-       case kStopped:
-       case kError:
-         break;
-         // do nothing
-       default:
-         qDebug() << "Undefined state" << file_state;
-         break;
+           new QTableWidgetItem("Wait "
+           + QString::number((wait_delay -state_change_msec)/1000)));
+
+       } else if (req_per_minute_quota > 0) {
+         req_per_minute_quota--;
+         file->CheckReport();
+       }
+       break;
+      case kRescan:
+        break;
+      case kScan:
+       ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_STATUS_COL,
+         new QTableWidgetItem("Uploading: "
+            + QString::number(file->GetProgress(), 'f', 1) + "%") );
+       break;
+      case kErrorTooBig:
+      case kErrorAccess:
+       break;
+      case kStopped:
+
+      case kError:
+       break;
+       // do nothing
+      default:
+       qDebug() << "Undefined state" << file_state;
+       break;
      }
   }
   ui->ScannerTableWidget_scan_table->resizeColumnsToContents();

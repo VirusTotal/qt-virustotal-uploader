@@ -9,6 +9,9 @@
 #define API_KEY "api/key"
 #define API_RATE_KEY "api/rate"
 
+
+#define DEFAULT_RESCAN_DAYS 7
+
 namespace Ui {
 class SettingsDialog;
 }
