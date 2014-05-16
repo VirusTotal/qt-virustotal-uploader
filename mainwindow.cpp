@@ -57,7 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
   emit LogMsgRecv(VT_LOG_DEBUG, 0 ,
-      tr("VirusTotal Uplaoder") + " " + VT_UPLOADER_VERSION + " "
+      tr("VirusTotal Uploader") + " " + VT_UPLOADER_VERSION + " "
       + tr("Compiled:") + __DATE__ + " " + __TIME__);
 
   // Drag drop signals

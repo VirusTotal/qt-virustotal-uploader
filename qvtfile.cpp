@@ -68,7 +68,20 @@ void QVtFile::CreateBundleZip()
   CreateAppZipTask *task = new CreateAppZipTask(this);
 
   if (bundle_tmp_dir->isValid()) {
-    zip_name =  bundle_tmp_dir->path() + "/" + finfo.bundleName() + ".app.zip";
+    if (finfo.bundleName().length() > 1)
+      zip_name =  bundle_tmp_dir->path() + "/" + finfo.bundleName() + ".app.zip";
+    else {
+      int last_slash = finfo.filePath().lastIndexOf("/");
+      qDebug() << "last_slash = " << last_slash;
+      qDebug() << "path = " << finfo.filePath();
+      if (last_slash > 0) {
+         zip_name = bundle_tmp_dir->path() + "/" + finfo.filePath().mid(last_slash) + ".zip";
+         qDebug() << "CreateBundleZip zip_name: " <<  zip_name;
+      } else {
+         zip_name = bundle_tmp_dir->path() + "/OSXApplication.app.zip";
+      }
+    }
+
   } else {
     zip_name = QDir::tempPath() + "/" + finfo.bundleName() + ".app.zip";
     emit LogMsg(VT_LOG_DEBUG, 0 , "Tmpdir not valid  using  " + zip_name);
