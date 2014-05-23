@@ -101,7 +101,7 @@ uLong filetime(char *f, tm_zip *tmzip, uLong *dt)
     if (len > MAXFILENAME)
       len = MAXFILENAME;
 
-    strncpy(name, f,MAXFILENAME-1);
+    strncpy(name, f,MAXFILENAME);
     /* strncpy doesnt append the trailing NULL, of the string is too long. */
     name[ MAXFILENAME ] = '\0';
 
