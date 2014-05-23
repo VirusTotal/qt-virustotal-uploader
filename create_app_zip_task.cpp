@@ -236,8 +236,6 @@ void CreateAppZipTask::AddZipPath(QFileInfo file_info, unsigned int depth)
                                filenameinzip);
           }
           processed_size += size_read;
-          if (total_size)
-            vtfile->SetProgress( (processed_size/total_size) * 100);
 
       }
     } while ((err == ZIP_OK) && (size_read>0));
@@ -281,6 +279,7 @@ void CreateAppZipTask::AddZipDir(QString path, unsigned int depth)
 
     qDebug() <<  path << " file "<< i << "/" << length << " = " << file_path;
     AddZipPath(file_info, depth);
+    vtfile->SetProgress( ((float) i / (float) length) * 100.0);
 
   }
 }
