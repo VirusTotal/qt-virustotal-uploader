@@ -92,7 +92,7 @@ void QVtFile::CreateBundleZip()
   QObject::connect(task, SIGNAL(LogMsg(int,int,QString)),
       this, SLOT(RelayLogMsg(int,int,QString)),  Qt::QueuedConnection);
 
-  task->run();
+  QThreadPool::globalInstance()->start(task);
 
 }
 
