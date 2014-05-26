@@ -37,7 +37,7 @@ void ScanFileTask::ScanSmallFile(void)
 //  VtFile_setProgressCallback(api, QVtFile::ProgessUpdateCallback, (void *)file);
   VtFile_setProgressCallback(api, progress_update, (void *)file);
 
-  ret = VtFile_scan(api, file->fileName().toStdString().c_str());
+  ret = VtFile_scan(api, file->fileName().toStdString().c_str(), NULL);
 
   if (ret) {
     qDebug() << "Error opening fetching report " << QString(file->GetSha256().toHex()) << "  " << ret;
