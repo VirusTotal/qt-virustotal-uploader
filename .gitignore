@@ -4,3 +4,6 @@ moc_*.cpp
 ui_mainwindow.h
 qt-vt-uploader
 qt-vt-uploader.pro.user
+ui_settings_dialog.h
+ui_tos_dialog.h
+
