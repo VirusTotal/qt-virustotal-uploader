@@ -73,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   state_timer = new QTimer(this);
   connect(state_timer, SIGNAL(timeout()), this, SLOT(StateTimerSlot()));
-  state_timer->start(500);
+  state_timer->start(400);
 
   ui->ScannerTableWidget_scan_table->setContextMenuPolicy(Qt::CustomContextMenu);
   ui->ScannerTableWidget_scan_table->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -575,7 +575,8 @@ void MainWindow::RunStateMachine(void)
 
          age_days = file->GetReportAgeDays();
          if (rescan_days  // rescan enabled
-             && age_days > rescan_days ){
+             && age_days > rescan_days  && req_per_minute_quota) {
+           req_per_minute_quota--;
            file->ReScan();
          } else {
            file->SetState(kStopped);
