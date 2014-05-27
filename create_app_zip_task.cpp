@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #endif
 
-#define MAXFILENAME (256)
+#define MAXFILENAME (512)
 
 CreateAppZipTask::CreateAppZipTask(QVtFile *f)
 {
@@ -139,9 +139,19 @@ uLong filetime(char *f, tm_zip *tmzip, uLong dt)
 #define BUF_SIZE 65536
 void CreateAppZipTask::AddZipPath(QFileInfo file_info, unsigned int depth)
 {
-  QString file_path = file_info.canonicalFilePath();
+	// Add file to zip
+  FILE * fin = NULL;
+  int size_read = 0;
+  QString file_path = "";
   unsigned char buf[BUF_SIZE];
+  const char *savefilenameinzip;
+  zip_fileinfo zi;
+  unsigned long crcFile=0;
+  int zip64 = 0;
+  int err = 0;
+  qDebug() << "file_info =" << file_info.path();
 
+  file_path = file_info.canonicalFilePath();
   // If the file does not exist, canonicalFilePath() returns an empty string.
   if (file_path.isEmpty())
     return;
@@ -150,16 +160,9 @@ void CreateAppZipTask::AddZipPath(QFileInfo file_info, unsigned int depth)
     AddZipDir(file_path, depth+1);
     return;
   }
-  // Add file to zip
-  FILE * fin;
-  int size_read;
-  char* filenameinzip = strdup(file_path.toStdString().c_str());
-  const char *savefilenameinzip;
-  zip_fileinfo zi;
-  unsigned long crcFile=0;
-  int zip64 = 0;
-  int err = 0;
 
+  char* filenameinzip = strdup(file_path.toStdString().c_str());
+  
   zi.tmz_date.tm_sec = zi.tmz_date.tm_min = zi.tmz_date.tm_hour =
   zi.tmz_date.tm_mday = zi.tmz_date.tm_mon = zi.tmz_date.tm_year = 0;
   zi.dosDate = 0;
@@ -264,20 +267,40 @@ void CreateAppZipTask::AddZipDir(QString path, unsigned int depth)
   int length;
 
 
-  if (depth > 16)
+  if (depth >10)
     return;  // avoid too much recursion
 
-  file_info_list = dir.entryInfoList(QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
+  file_info_list = dir.entryInfoList(QDir::AllDirs
+  | QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks | QDir::Readable);
   length = file_info_list.length();
+  
+  // 1st go through and get all dirs
+  for (int i = 0; i < length; i++) {
+    QFileInfo file_info = file_info_list[i];
+    QString file_path = file_info.canonicalFilePath();
+    if (file_path.isEmpty())
+      continue;
+    
+    if (file_info.isDir()) {
+      AddZipDir(file_path, depth+1);
+    }
+  }
+
+  
   for (int i = 0; i < length; i++) {
     QFileInfo file_info = file_info_list[i];
     QString file_path = file_info.canonicalFilePath();
 
+    if (file_info.isDir()) {
+      continue;
+    }
+    
     // If the file does not exist, canonicalFilePath() returns an empty string.
     if (file_path.isEmpty())
       continue;
 
-    qDebug() <<  path << " file "<< i << "/" << length << " = " << file_path;
+    qDebug() <<  path << " file "<< i << "/" << length << " = " << file_path
+    << " depth= " << depth  << " total_size= " << total_size;
     AddZipPath(file_info, depth);
     vtfile->SetProgress( ((float) i / (float) length) * 100.0);
 
