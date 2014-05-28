@@ -301,7 +301,7 @@ void MainWindow::OnDropRecv(const QMimeData *mime_data)
       if (file_info.isFile()) {
         emit AddFile(file_path);
       } else if (file_info.isDir()) {
-        AddDir(file_path);
+        emit AddDir(file_path);
       } else {
         emit LogMsgRecv(VT_LOG_ERR, 0 , tr("Unknown file type ") + mime_data->text());
       }

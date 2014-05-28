@@ -13,6 +13,8 @@
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>@ICON@</string>
 		</dict>
 	</array>
 </dict>

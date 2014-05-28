@@ -47,7 +47,7 @@ private:
 
   void ReDrawScannerTable(void);
   void RunStateMachine(void);
-  void AddDir(QString path);
+
 
 private slots:
   void LogMsgRecv(int level, int code, QString Msg);
@@ -65,6 +65,7 @@ private slots:
 
 public slots:
   void AddFile(QString file_path);
+  void AddDir(QString path);
 
 protected:
   void dragEnterEvent(QDragEnterEvent *event);

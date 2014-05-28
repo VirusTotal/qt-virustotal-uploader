@@ -12,6 +12,9 @@ int main(int argc, char *argv[])
   QObject::connect(&a, SIGNAL(loadFile(QString)),
     &w, SLOT(AddFile(QString)),  Qt::QueuedConnection);
 
+  QObject::connect(&a, SIGNAL(loadDir(QString)),
+    &w, SLOT(AddDir(QString)),  Qt::QueuedConnection);
+
   w.show();
 
   return a.exec();

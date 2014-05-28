@@ -12,6 +12,7 @@ class VTUploaderApplication : public QApplication
     VTUploaderApplication(int & argc, char ** argv);
   signals:
     void loadFile(QString fileName);
+    void loadDir(QString path);
 };
 
 #endif // VT_UPLOADER_APPLICATION_H
