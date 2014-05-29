@@ -1,0 +1,11 @@
+
+Version 1.2.  
+ * Add support for dragging files on Mac to icon on bar
+
+Version 1.1  2014-05-27
+ * Fix crash on .app  folders when the depth was more than 7 levels
+ * Modify rescan logic
+
+Version 1.0  2014-05-26
+ Inital release
+
