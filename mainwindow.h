@@ -24,8 +24,10 @@ limitations under the License.
 #include <QDragLeaveEvent>
 #include <QDropEvent>
 #include <QTimer>
-
-
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "qvtfile.h"
 #include "settings_dialog.h"
@@ -58,6 +60,7 @@ private:
   QMenuBar *menuBar;
   SettingsDialog *settings_dialog;
   ToSDialog *tos_dialog;
+  QNetworkAccessManager *net_manager;
   long long int state_counter;
   int concurrent_uploads;
 
@@ -78,6 +81,7 @@ private slots:
   void AddAppBundle(QString bundle_path);
   void DisplayTosDialog(void);
   void DisplayFileDialog(void);
+  void replyFinished(QNetworkReply*reply);
 
 public slots:
   void AddFile(QString file_path);

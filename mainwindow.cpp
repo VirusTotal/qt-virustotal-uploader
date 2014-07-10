@@ -51,7 +51,7 @@ limitations under the License.
 #define SCAN_TABLE_FULLPATH_COL 9
 
 
-#define VT_UPLOADER_VERSION "0.1"
+#define VT_UPLOADER_VERSION "1.2"
 
 #define MAX_LOG_MSG_LINES 1000
 
@@ -74,7 +74,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   emit LogMsgRecv(VT_LOG_DEBUG, 0 ,
       tr("VirusTotal Uploader") + " " + VT_UPLOADER_VERSION + " "
-      + tr("Compiled:") + __DATE__ + " " + __TIME__);
+      + tr("Compiled: ") + __DATE__ + " " + __TIME__);
 
   // Drag drop signals
   connect(ui->ScannerTableWidget_scan_table, SIGNAL(dropped(const QMimeData*)), this, SLOT(OnDropRecv(const QMimeData*)));
@@ -117,6 +117,10 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(tos, SIGNAL(triggered()), this, SLOT(DisplayTosDialog()));
   this->ui->menuHelp->addAction(tos);
 
+  net_manager = new QNetworkAccessManager(this);
+  connect(net_manager, SIGNAL(finished(QNetworkReply*)),
+          this, SLOT(replyFinished(QNetworkReply*)));
+  net_manager->get(QNetworkRequest(QUrl("https://www.virustotal.com/static/bin/osx/mac_uploader.json")));
 }
 
 MainWindow::~MainWindow()
@@ -161,6 +165,38 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   QThreadPool::globalInstance()->waitForDone();
   event->accept();
 }
+
+void MainWindow::replyFinished(QNetworkReply *reply)
+{
+  QByteArray bytes = reply->readAll();
+
+  int status_code = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+  qDebug() << "Update StatusCode:" << QVariant(status_code).toString();
+  if (status_code == 200) {
+    QString reply_str = QString::fromUtf8(bytes.data(), bytes.size());
+    qDebug() << "Update JSON:" << reply_str << endl;
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(reply_str.toUtf8());
+    QJsonObject jsonObject = jsonResponse.object();
+    QString latest_ver_str = jsonObject["latest_ver"].toString();
+    qDebug() << "Latest version:" << latest_ver_str << endl;
+
+#if defined(TARGET_OS_X) || defined(__APPLE__ )
+    if (latest_ver_str != QString(VT_UPLOADER_VERSION)) {
+      QMessageBox msgBox;
+      msgBox.setTextFormat(Qt::RichText);
+      msgBox.setText(
+        "You have version: " VT_UPLOADER_VERSION " The latest version is: "
+        + latest_ver_str +
+        "<br>A new version of the VirusTotal Uploader is avaiable at: <br>"
+        "<a href=\"https://www.virustotal.com/en/documentation/desktop-applications/mac-osx-uploader\">"
+        "https://www.virustotal.com/en/documentation/desktop-applications/mac-osx-uploader</a>");
+      msgBox.exec();
+    }
+#endif
+  }
+
+}
+
 
 void MainWindow::LogMsgRecv(int log_level, int err_code, QString Msg)
 {
