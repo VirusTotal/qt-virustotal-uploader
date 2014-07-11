@@ -13,7 +13,23 @@
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
+			<key>CFBundleTypeIconFile</key>
+			<string>@ICON@</string>
 		</dict>
 	</array>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Created by VirusTotal</string>
+	<key>CFBundleSignature</key>
+	<string>@TYPEINFO@</string>
+	<key>CFBundleExecutable</key>
+	<string>@EXECUTABLE@</string>
+	<key>CFBundleVersion</key>
+	<string>1.2</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.2</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.virustotal.@EXECUTABLE@</string>
 </dict>
 </plist>
