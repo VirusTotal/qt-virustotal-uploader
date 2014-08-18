@@ -113,6 +113,12 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(action_file_select, SIGNAL(triggered()), this, SLOT(DisplayFileDialog()));
   this->ui->menuFile->addAction(action_file_select);
 
+
+  QAction *action_export_select = new QAction(tr("Export Report"), this);
+  connect(action_export_select, SIGNAL(triggered()), this, SLOT(DisplayExportDialog()));
+  this->ui->menuFile->addAction(action_export_select);
+
+
   QAction *tos = new QAction(tr("VirusTotal Terms"), this);
   connect(tos, SIGNAL(triggered()), this, SLOT(DisplayTosDialog()));
   this->ui->menuHelp->addAction(tos);
@@ -465,6 +471,61 @@ void MainWindow::DisplayFileDialog(void)
 
 }
 
+void MainWindow::ExportReport(QString file_name)
+{
+  QFile file( file_name );
+  if ( file.open(QIODevice::WriteOnly | QIODevice::Text) )
+  {
+      QTextStream stream( &file );
+      for (int i = 0; i < file_vector.count(); i++) {
+        QVtFile *file = file_vector.operator[](i);
+
+        stream << "\"" << file->fileName() << "\",";
+        if (file->GetTotalScans() > 1) {
+          // If we have results show them.
+          stream << "\"" << file->GetPositives() << "\",";
+          stream << "\"" << file->GetTotalScans() << "\",";
+        } else {
+          // leave empty
+          stream << "\"\",\"\",";
+        }
+        stream << "\"" << file->GetScanDate().toString(Qt::DefaultLocaleShortDate) << "\",";
+        stream << "\"" << file->GetPermalink() << "\",";
+        stream << "\"" << QString(file->GetMd5().toHex()) << "\",";
+        stream << "\"" << QString(file->GetSha1().toHex()) << "\",";
+        stream << "\"" << QString(file->GetSha256().toHex()) << "\"" << endl;
+
+      }
+      file.close();
+  } else {
+    QMessageBox msgBox;
+    msgBox.setText(
+      "Error opening file for writing: " + file_name);
+    msgBox.exec();
+  }
+}
+
+void MainWindow::DisplayExportDialog(void)
+{
+
+  if (file_vector.count() > 0) {
+    QString file_name = QFileDialog::getSaveFileName(this, tr("Save Report"),
+          "vt-report.csv", // dir
+          tr("CSV (*.csv)"));
+    qDebug() << "DisplayExportDialog File:" << file_name;
+    ExportReport(file_name);
+  } else {
+    QMessageBox msgBox;
+    msgBox.setText(
+      "You have to scan a file before you can export the report!");
+    msgBox.exec();
+
+  }
+
+
+
+}
+
 void MainWindow::customMenuRequested(QPoint pos){
     QModelIndex index=ui->ScannerTableWidget_scan_table->indexAt(pos);
     int row = index.row();
@@ -563,6 +624,28 @@ void MainWindow::RunStateMachine(void)
       concurrent_uploads++;
   }
 
+  for (int i = 0; i < num_files ; i++) {
+    QVtFile *file = file_vector.operator[](i);
+
+    if (file->GetState() != KNoReportExists)
+      continue;
+
+    // do this pass before the other states below so we can prioritize uploads
+
+    if (file->GetUploaded()) {
+      // already uploaed  wait more
+      qDebug() << "No Report..already uploaded,  wait more";
+      file->SetState(kWaitForReport);
+    } else {
+      qDebug() << "No Report..Scan file quota=" << req_per_minute_quota
+               << " concurrent_uploads=" << concurrent_uploads;
+      if (req_per_minute_quota && concurrent_uploads < 3) {
+        req_per_minute_quota--;
+        file->Scan();
+        concurrent_uploads++;
+      }
+    }
+  }
   for (int i = 0; i < num_files ; i++) {
     QVtFile *file = file_vector.operator[](i);
     QString state_str = file->GetStateStr();

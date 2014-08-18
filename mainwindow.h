@@ -66,7 +66,7 @@ private:
 
   void ReDrawScannerTable(void);
   void RunStateMachine(void);
-
+  void ExportReport(QString file_name);
 
 private slots:
   void LogMsgRecv(int level, int code, QString Msg);
@@ -81,6 +81,7 @@ private slots:
   void AddAppBundle(QString bundle_path);
   void DisplayTosDialog(void);
   void DisplayFileDialog(void);
+  void DisplayExportDialog(void);
   void replyFinished(QNetworkReply*reply);
 
 public slots:
