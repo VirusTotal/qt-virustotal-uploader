@@ -255,7 +255,7 @@ void MainWindow::LogMsgRecv(int log_level, int err_code, QString Msg)
       Level_Cell_Item->setText("Debug");
       break;
     default:
-      Level_Cell_Item->setText(QString("Unkown %1").arg(log_level));
+      Level_Cell_Item->setText(QString("Unknown %1").arg(log_level));
       break;
   }
 
