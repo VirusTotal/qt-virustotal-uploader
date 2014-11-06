@@ -562,7 +562,7 @@ void MainWindow::ReDrawScannerTable(void)
   ui->ScannerTableWidget_scan_table ->setRowCount(num_files+1);
 
 
-  qDebug() << "ReDraw..  Seperator:" << QDir::separator();
+  qDebug() << "ReDraw..  Separator:" << QDir::separator();
 
   for (int i = 0; i < num_files ; i++) {
 
