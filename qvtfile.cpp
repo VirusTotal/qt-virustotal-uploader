@@ -185,11 +185,11 @@ QString QVtFile::GetStateStr(void)
     case kErrorAccess:
       return tr("Access Denied");
     case kStopped:
-      return tr("Idle");
+      return tr("Done");
     case kError:
       return tr("Error");
     default:
-     return  QString("QVtFile::GetStateStr Undefined state") + QString::number(vt_file_state);
+     return  QString("QVtFile::GetStateStr Undefined state: ") + QString::number(vt_file_state) + " "+ this->fileName();
   }
 }
 

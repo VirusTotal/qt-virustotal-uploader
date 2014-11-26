@@ -104,6 +104,7 @@ void AddDirTask::ScanPath(QFileInfo file_info, unsigned int depth)
 
 void AddDirTask::ScanPath(QString path, unsigned int depth)
 {
+  qDebug() << "ScanPath " << path << " depth:" << depth;
   ScanPath(QFileInfo(path), depth);
 }
 

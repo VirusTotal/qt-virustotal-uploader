@@ -89,6 +89,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
   state_timer = new QTimer(this);
   connect(state_timer, SIGNAL(timeout()), this, SLOT(StateTimerSlot()));
+  state_timer->setSingleShot(true); // make single shot so it can't overun
   state_timer->start(400);
 
   ui->ScannerTableWidget_scan_table->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -279,10 +280,11 @@ void MainWindow::AddFile(QString file_path)
   QVtFile *file = NULL;
 
   for (int i = 0; i < file_vector.length(); i++) {
+//    qDebug() << "Checking: " << file_vector[i]->fileName();
     if (file_vector[i]->fileName() == file_path)
       return;
   }
-
+//  qDebug() << "Adding:" << file_path;
   file = new QVtFile(file_path, this);
   connect(file, SIGNAL(LogMsg(int,int,QString)),this, SLOT(LogMsgRecv(int,int,QString)));
   file_vector.append(file);
@@ -307,6 +309,8 @@ void MainWindow::AddAppBundle(QString file_path)
 void MainWindow::AddDir(QString path)
 {
   AddDirTask *task = new AddDirTask(path);
+
+  qDebug() << "AddDir : " << path;
 
   QObject::connect(task, SIGNAL(LogMsg(int,int,QString)),
     this, SLOT(LogMsgRecv(int,int,QString)),  Qt::QueuedConnection);
@@ -561,9 +565,6 @@ void MainWindow::ReDrawScannerTable(void)
   ui->ScannerTableWidget_scan_table->clear();
   ui->ScannerTableWidget_scan_table ->setRowCount(num_files+1);
 
-
-  qDebug() << "ReDraw..  Separator:" << QDir::separator();
-
   for (int i = 0; i < num_files ; i++) {
 
     QVtFile *file = file_vector.operator[](i);
@@ -580,7 +581,7 @@ void MainWindow::ReDrawScannerTable(void)
 //    ui->ScannerTableWidget_scan_table->insertRow(0);
     QString short_name = file->fileName().mid(last_slash);
 
-    qDebug() << "Last_slash=" << last_slash  << " Short name: " << short_name;
+//    qDebug() << "Last_slash=" << last_slash  << " Short name: " << short_name;
     Path_Cell_Item  = new QTableWidgetItem(short_name);
 
     ui->ScannerTableWidget_scan_table->setItem(i, SCAN_TABLE_FILE_COL, Path_Cell_Item );
@@ -803,9 +804,12 @@ void MainWindow::RunStateMachine(void)
 
 void MainWindow::StateTimerSlot(void)
 {
-// qDebug() << "StateTimerSlot";
+  qDebug() << "StateTimerSlot";
   RunStateMachine();
   state_counter++;
+
+  state_timer->start(400); // rearm
+
 }
 
 
