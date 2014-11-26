@@ -255,7 +255,7 @@ void MainWindow::LogMsgRecv(int log_level, int err_code, QString Msg)
       Level_Cell_Item->setText("Debug");
       break;
     default:
-      Level_Cell_Item->setText(QString("Unkown %1").arg(log_level));
+      Level_Cell_Item->setText(QString("Unknown %1").arg(log_level));
       break;
   }
 
@@ -562,7 +562,7 @@ void MainWindow::ReDrawScannerTable(void)
   ui->ScannerTableWidget_scan_table ->setRowCount(num_files+1);
 
 
-  qDebug() << "ReDraw..  Seperator:" << QDir::separator();
+  qDebug() << "ReDraw..  Separator:" << QDir::separator();
 
   for (int i = 0; i < num_files ; i++) {
 
