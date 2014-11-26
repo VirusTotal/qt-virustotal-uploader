@@ -51,7 +51,7 @@ limitations under the License.
 #define SCAN_TABLE_FULLPATH_COL 9
 
 
-#define VT_UPLOADER_VERSION "1.2"
+#define VT_UPLOADER_VERSION "1.3"
 
 #define MAX_LOG_MSG_LINES 1000
 

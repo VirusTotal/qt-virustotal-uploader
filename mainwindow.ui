@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>VirusTotal Uploader 1.2 ( Drag and drop files to window) </string>
+   <string>VirusTotal Uploader 1.3 ( Drag and drop files to window) </string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
