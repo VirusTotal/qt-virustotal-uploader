@@ -30,8 +30,11 @@ git clone https://github.com/VirusTotal/c-vtapi.git
 #change to c-vtapi directory
 cd c-vtapi
 
-# configure with default option and make with 4 jobs in parallel
-./conigure && make -j4
+# get c-vtapi dependencies
+sudo apt-get install automake autoconf libtool libjansson-dev libcurl4-openssl-dev
+
+# configure with default options and make
+autoreconf -fi && ./configure && make
 
 # install to system, by default this goes to /usr/local/lib
 sudo make install 
