@@ -31,7 +31,8 @@ git clone https://github.com/VirusTotal/c-vtapi.git
 cd c-vtapi
 
 # configure with default option and make with 4 jobs in parallel
-./conigure && make -j4
+autoreconf -fi
+./configure && make -j4
 
 # install to system, by default this goes to /usr/local/lib
 sudo make install 
