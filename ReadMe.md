@@ -22,7 +22,7 @@ This program internally uses the VirusTotal [public API](https://www.virustotal.
 
 ```
 # get dependencies
-sudo apt-get install build-essential qtchooser qt5-default libjansson-dev libcurl4-openssl-dev git
+sudo apt-get install build-essential qtchooser qt5-default libjansson-dev libcurl4-openssl-dev git zlib1g-dev
 
 # clone the c-vtapi library
 git clone https://github.com/VirusTotal/c-vtapi.git
